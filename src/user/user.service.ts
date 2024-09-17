@@ -1,10 +1,8 @@
 import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 import { LoggerService } from '../global/logger';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import { User } from './schemas/user.schema';
+import { Types } from 'mongoose';
 import { UserRepo } from './repos/user.repo';
-import { MongoQueryObject } from '../global/types';
+import { MongoUpdateParams } from '../global/types/mongo.types';
 
 @Injectable()
 export class UserService {
@@ -31,19 +29,35 @@ export class UserService {
   async findOneByEmail(email: string) {
     this.logger.silly(UserService.name, this.findOneByEmail.name, 'started');
 
-    return await this.userRepo.findOne({ email });
+    const user = await this.userRepo.findOne({ query: { email } });
+    console.log('user: ', user);
+    return user;
   }
 
-  async findOneAndUpdate({query, updateData: updateUser, options}: MongoQueryObject){
+  async findOneAndUpdate({
+    query,
+    updateData: updateUser,
+    options,
+  }: MongoUpdateParams) {
     this.logger.silly(UserService.name, this.findOneAndUpdate.name, 'started');
 
-    return await this.userRepo.findOneAndUpdate(query, updateUser, options);
+    return await this.userRepo.findOneAndUpdate({
+      query,
+      updateData: updateUser,
+      options,
+    });
   }
 
-  async findByIdAndUpdate(_id: string | Types.ObjectId, updateUser: Record<string, any>) {
+  async findByIdAndUpdate(
+    _id: string | Types.ObjectId,
+    updateUser: Record<string, any>,
+  ) {
     this.logger.silly(UserService.name, this.findByIdAndUpdate.name, 'started');
 
-    return await this.userRepo.findOneAndUpdate({ _id }, updateUser);
+    return await this.userRepo.findOneAndUpdate({
+      query: { _id },
+      updateData: updateUser,
+    });
   }
 
   remove(id: number) {

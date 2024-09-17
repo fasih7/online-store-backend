@@ -14,6 +14,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { join } from 'path';
+import { ProductsModule } from './products/products.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { join } from 'path';
     UserModule,
     AuthModule,
     NotificationsModule,
+    ProductsModule,
   ],
   controllers: [AppController],
   providers: [

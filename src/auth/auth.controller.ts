@@ -9,7 +9,7 @@ import {
   Get,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { CreateUserDto } from './dto/create-user.dto';
+import {  CreateUserDto } from './dto/create-user.dto';
 import { VerifyUserDto } from './dto/verify.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './gaurds/auth.gaurd';
@@ -20,7 +20,6 @@ import { Role } from '../global/enums';
 import { RolesGuard } from './role/role.guard';
 
 //TODO: forgot and change password
-//TODO: Role based
 //TODO: limit
 //TODO: further security enhancements
 
@@ -29,9 +28,21 @@ import { RolesGuard } from './role/role.guard';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post('sign-up')
-  async registerUser(@Body() user: CreateUserDto) {
-    return this.authService.registerUser(user);
+  // @Post('sign-up')
+  // async registerUser(@Body() user: CreateUserDto) {
+  //   return this.authService.registerUser(user);
+  // }
+  
+
+  //TODO: phone verification for the client and customer
+  @Post('client-sign-up')
+  async registerClient(@Body() client: CreateUserDto) {
+    return this.authService.registerUser({...client, role: Role.client});
+  }
+
+  @Post('customer-sign-up')
+  async registerCustomer(@Body() client: CreateUserDto) {
+    return this.authService.registerUser({...client, role: Role.customer});
   }
 
   @Post('verify')
@@ -74,10 +85,10 @@ export class AuthController {
     description: 'Custom header',
   })
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.admin)
-  @Get('admin')
+  @Roles(Role.client)
+  @Get('client')
   getAdminRole() {
-    return 'user is admin';
+    return 'user is client';
   }
 
   //* Endpoint to test successful access to a protected customer route

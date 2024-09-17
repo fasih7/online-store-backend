@@ -14,7 +14,11 @@ import { hashWithBcryptJS, validatePassword } from './utils/bcrypt';
 import { LoginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { ChangePassDto } from './dto/change-pass.dto';
-import { MongoQueryObject } from '../global/types';
+import { Role } from '../global/enums';
+import {
+  MongoFindParams,
+  MongoUpdateParams,
+} from '../global/types/mongo.types';
 
 @Injectable()
 export class AuthService {
@@ -27,7 +31,7 @@ export class AuthService {
   //TODO: Implement optional token verification and email verification
   //TODO: Implementation for SSO
 
-  async registerUser(user: CreateUserDto) {
+  async registerUser(user: CreateUserDto & { role: Role }) {
     //bcryptjs used for issues with python dependency for bcrypt
     //Ideally bcrypt should be used as it is much faster, replace the method in utils if that is preferred
     user.password = await hashWithBcryptJS(user.password);
@@ -53,18 +57,26 @@ export class AuthService {
 
   async verifyUserEmail({ email, token }) {
     //TODO: add token restriction to 3
-    const query: MongoQueryObject = {query: {email}, updateData: { $inc: { 'token.tries': -1 } }, options: { new: false }};
+    const query: MongoUpdateParams = {
+      query: { email },
+      updateData: { $inc: { 'token.tries': -1 } },
+      options: { new: false },
+    };
     const user = await this.userService.findOneAndUpdate(query);
 
     if (!user || user.status !== Status.pending)
       throw new NotFoundException('Not found');
 
-    if(user.token.tries <= 0){
-      throw new UnprocessableEntityException('You have ran out of try limit. Please generate a new token')
+    if (user.token.tries <= 0) {
+      throw new UnprocessableEntityException(
+        'You have ran out of try limit. Please generate a new token',
+      );
     }
 
     if (user.token.value !== token)
-      throw new UnauthorizedException(`Incorrect token. ${user.token.tries} tries left` ); //Todo: handle try/tries
+      throw new UnauthorizedException(
+        `Incorrect token. ${user.token.tries} tries left`,
+      ); //Todo: handle try/tries
 
     if (!isNotExpired(user.token.expiration)) {
       throw new UnauthorizedException('Token has been expired');

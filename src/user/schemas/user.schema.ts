@@ -1,8 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
+import mongoose, { HydratedDocument } from 'mongoose';
 import { Token } from '../utils/constants';
 import { Status } from '../utils/enums';
 import { Role } from '../../global/enums';
+import { Product } from '../../products/schemas/product.schema';
 
 export type UserDocument = HydratedDocument<User>;
 
@@ -25,6 +26,9 @@ export class User {
 
   @Prop({ type: String, enum: Role, required: true })
   role: Role;
+
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Owner' }] })
+  products: Product[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
