@@ -14,15 +14,22 @@ export class CreateUserDto {
   @ApiProperty()
   @IsNotEmpty()
   @IsString()
-  @MinLength(2)
+  @MinLength(1)
   @MaxLength(50)
-  name: string;
+  firstName: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(50)
+  lastName: string;
 
   @ApiProperty()
   @IsNotEmpty()
   @IsEmail()
   @MinLength(2)
-  @MaxLength(50)
+  @MaxLength(100)
   email: string;
 
   @ApiProperty()
@@ -31,7 +38,7 @@ export class CreateUserDto {
   @MinLength(11)
   @MaxLength(13)
   //TODO: will not be optional after initial development
-  @IsOptional()  //! import to remove this
+  @IsOptional() //! import to remove this
   phoneNumber: string;
 
   @ApiProperty()

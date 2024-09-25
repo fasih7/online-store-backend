@@ -13,13 +13,20 @@ export class CreateUserDto {
   @IsString()
   @MinLength(2)
   @MaxLength(50)
-  name: string;
+  firstName: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(50)
+  lastName: string;
 
   @ApiProperty()
   @IsNotEmpty()
   @IsEmail()
   @MinLength(2)
-  @MaxLength(50)
+  @MaxLength(100)
   email: string;
 
   @ApiProperty()
