@@ -18,5 +18,5 @@ export const getTokenValues = (): Token => {
   const expiration = new Date()
     .setMinutes(new Date().getMinutes() + 3)
     .toString();
-  return { value, expiration, tries: 2 };
+  return { value, expiration, tries: 5 };
 };

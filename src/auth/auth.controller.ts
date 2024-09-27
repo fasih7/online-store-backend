@@ -9,7 +9,7 @@ import {
   Get,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import {  CreateUserDto } from './dto/create-user.dto';
+import { CreateUserDto } from './dto/create-user.dto';
 import { VerifyUserDto } from './dto/verify.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './gaurds/auth.gaurd';
@@ -32,24 +32,27 @@ export class AuthController {
   // async registerUser(@Body() user: CreateUserDto) {
   //   return this.authService.registerUser(user);
   // }
-  
 
   //TODO: phone verification for the client and customer
+  @HttpCode(HttpStatus.OK)
   @Post('client-sign-up')
   async registerClient(@Body() client: CreateUserDto) {
-    return this.authService.registerUser({...client, role: Role.client});
+    return this.authService.registerUser({ ...client, role: Role.client });
   }
 
+  @HttpCode(HttpStatus.OK)
   @Post('customer-sign-up')
   async registerCustomer(@Body() client: CreateUserDto) {
-    return this.authService.registerUser({...client, role: Role.customer});
+    return this.authService.registerUser({ ...client, role: Role.customer });
   }
 
+  @HttpCode(HttpStatus.OK)
   @Post('verify')
   verifyUserEmail(@Body() verifyBody: VerifyUserDto) {
     return this.authService.verifyUserEmail(verifyBody);
   }
 
+  @HttpCode(HttpStatus.OK)
   @Post('resend-token')
   resendVerificationToken(@Body('email') email: string) {
     return this.authService.resendVerificationToken(email);

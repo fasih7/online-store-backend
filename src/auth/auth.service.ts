@@ -45,12 +45,12 @@ export class AuthService {
     });
 
     // Send Email with Token in the backGround
-    this.emailService.sendMail(
-      user.email,
-      'Email Verification',
-      './signup-verification.hbs',
-      { token: token.value },
-    );
+    // this.emailService.sendMail(
+    //   user.email,
+    //   'Email Verification',
+    //   './signup-verification.hbs',
+    //   { token: token.value },
+    // );
 
     if (createdUser) return SuccessResponse;
   }
@@ -82,12 +82,19 @@ export class AuthService {
       throw new UnauthorizedException('Token has been expired');
     }
 
-    await this.userService.findByIdAndUpdate(user._id, {
+    const confirmedUser = await this.userService.findByIdAndUpdate(user._id, {
       status: Status.active,
       token: {},
     });
 
-    return SuccessResponse;
+    const payload = {
+      sub: confirmedUser._id,
+      email: confirmedUser.email,
+      role: confirmedUser.role,
+    };
+    return {
+      access_token: await this.jwtService.signAsync(payload),
+    };
   }
 
   async resendVerificationToken(email: string) {
