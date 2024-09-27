@@ -20,7 +20,8 @@ export class MongoBaseDataAccess {
     } catch (error) {
       if (error.code === 11000)
         throw new UnprocessableEntityException(
-          `Data already exits, error details: ${error.message}`, //! ToDO: this needs to handle for all data
+          `Data already exits, error details: ${error.message}`,
+          '11000', //! ToDO: this needs to handle for all data
         );
       throw error;
     }
