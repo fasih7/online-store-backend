@@ -18,9 +18,8 @@ export class FeaturedProductsService {
     );
 
     if (!currentFeaturedProducts) {
-      throw new BadRequestException(
-        'User does not have any featured products.',
-      );
+      const result = await this.createFeatureProduct(toAddIds);
+      return result;
     }
 
     console.log({ toRemoveIds });
@@ -50,10 +49,10 @@ export class FeaturedProductsService {
   }
 
   //temp
-  async createFeatureProduct(product: string, userId?: string) {
+  async createFeatureProduct(product: string[], userId?: string) {
     return await this.featuredProductRepo.create({
       userId,
-      products: [product],
+      products: product,
     });
   }
 }

@@ -18,6 +18,7 @@ import { ApiHeader, ApiTags } from '@nestjs/swagger';
 import { Roles } from './roles/roles.decorator';
 import { Role } from '../global/enums';
 import { RolesGuard } from './role/role.guard';
+import { Throttle } from '@nestjs/throttler';
 
 //TODO: forgot and change password
 //TODO: limit
@@ -52,6 +53,7 @@ export class AuthController {
     return this.authService.verifyUserEmail(verifyBody);
   }
 
+  // @Throttle({ default: { limit: 5, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @Post('resend-token')
   resendVerificationToken(@Body('email') email: string) {

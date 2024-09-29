@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -108,14 +109,14 @@ export class AuthService {
     await user.save();
 
     // Send Email with Token in the backGround
-    this.emailService.sendMail(
-      email,
-      'Email Verification',
-      './signup-verification.hbs',
-      {
-        token: token.value,
-      },
-    );
+    // this.emailService.sendMail(
+    //   email,
+    //   'Email Verification',
+    //   './signup-verification.hbs',
+    //   {
+    //     token: token.value,
+    //   },
+    // );
 
     return SuccessResponse;
   }
@@ -128,6 +129,12 @@ export class AuthService {
 
     const validate = await validatePassword(password, user?.password);
     if (!validate) throw new UnauthorizedException('Wrong Email or password');
+
+    if (user.status === Status.pending)
+      throw new ForbiddenException(
+        'Email is pending verification. Please verify your email first',
+        'pendingVerification',
+      );
 
     const payload = { sub: user._id, email: user.email, role: user.role };
     return {
