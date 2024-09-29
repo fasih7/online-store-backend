@@ -37,9 +37,9 @@ This is a demo project built using the [NestJS](https://nestjs.com) framework to
 
 To get started, clone this repository and install the necessary dependencies:
 
-````bash
-$ npm install
 ```bash
+$ npm install
+```
 
 ## Running the app
 
@@ -48,7 +48,7 @@ Before running the application, ensure the database is properly set up by runnin
 ```bash
 # Run database migrations
 $ npx migrate-mongo up
-```bash
+```
 
 Once the migrations are complete, you can run the app:
 
@@ -61,7 +61,7 @@ $ npm run start:dev
 
 # production mode
 $ npm run start:prod
-```bash
+```
 
 ## Sample `.env` file
 
@@ -71,7 +71,7 @@ Create a `.env` file in the root of your project to configure environment variab
 MONGO_URI=mongodb://localhost:27017/online-store
 JWT_SECRET=your_secret_key
 PORT=3000
-```bash
+```
 
 Make sure to replace the values according to your local setup.
 
@@ -86,7 +86,7 @@ $ npm run test:e2e
 
 # generate test coverage report
 $ npm run test:cov
-```bash
+```
 
 ## Support
 
@@ -101,4 +101,7 @@ Nest is an MIT-licensed open-source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](LICENSE).
-````
+
+```
+
+```
