@@ -68,9 +68,17 @@ $ npm run start:prod
 Create a `.env` file in the root of your project to configure environment variables. Here's a sample `.env` file:
 
 ```bash
-MONGO_URI=mongodb://localhost:27017/online-store
-JWT_SECRET=your_secret_key
-PORT=3000
+PORT=4200
+MONGO_CONNECTION_STRING=mongodb://localhost:27017/online-store #or Your connection string here
+SALT_ROUNDS=rounds in number
+
+# SMTP credentials for gmail
+EMAIL_ID=your email
+APP_PASSWORD=your pass key
+
+# JWT
+JWT_SECRET_KEY=some long jwt secret
+JWT_EXPIRATION_TIME=30m or 60s
 ```
 
 Make sure to replace the values according to your local setup.
