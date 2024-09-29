@@ -18,9 +18,10 @@ export class MongoBaseDataAccess {
       const result = await this.model.create(data);
       return result;
     } catch (error) {
+      // console.log('Error details: ', error);
       if (error.code === 11000)
         throw new UnprocessableEntityException(
-          `Data already exits, error details: ${error.message}`,
+          `Data already exits`,
           '11000', //! ToDO: this needs to handle for all data
         );
       throw error;

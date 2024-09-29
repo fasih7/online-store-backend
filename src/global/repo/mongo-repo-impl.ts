@@ -1,6 +1,6 @@
 import { Model } from 'mongoose';
 import { MongoBaseDataAccess } from '../data/mongoBaseDataAccess';
-import { MongoFindParams, Options } from '../types/mongo.types';
+import { Options } from '../types/mongo.types';
 import { getPaginationObject } from '../helpers/methods';
 import { FindQueryParamsType } from '../types/shared-types';
 

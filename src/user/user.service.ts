@@ -1,8 +1,13 @@
-import { Injectable, UnprocessableEntityException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { LoggerService } from '../global/logger';
 import { Types } from 'mongoose';
 import { UserRepo } from './repos/user.repo';
 import { MongoUpdateParams } from '../global/types/mongo.types';
+import { Status } from './utils/enums';
 
 @Injectable()
 export class UserService {
@@ -18,10 +23,16 @@ export class UserService {
       const result = await this.userRepo.create(user);
       return result;
     } catch (error) {
-      if (error.code === 11000)
-        throw new UnprocessableEntityException(
-          'User with this email already exists',
-        );
+      console.log('error resp: ', error.response.error);
+
+      if (error.response.error == '11000') {
+        const storedUser = await this.findOneByEmail(user.email);
+        if (storedUser.status === Status.pending)
+          throw new ForbiddenException(
+            'Email is pending verification. Please verify your email first',
+            'pendingVerification',
+          );
+      }
       throw error;
     }
   }

@@ -5,7 +5,7 @@ import * as Morgan from 'morgan';
 import { LoggerModule } from './global/logger';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import configuration from './config/configuration';
-import { APP_FILTER } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { GlobalExceptionFilter } from './global/global-exception.filter';
 import { UserModule } from './user/user.module';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -15,6 +15,7 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { join } from 'path';
 import { ProductsModule } from './products/products.module';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
@@ -47,6 +48,12 @@ import { ProductsModule } from './products/products.module';
         },
       },
     }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 10,
+      },
+    ]),
     LoggerModule,
     UserModule,
     AuthModule,
@@ -59,6 +66,10 @@ import { ProductsModule } from './products/products.module';
     {
       provide: APP_FILTER,
       useClass: GlobalExceptionFilter,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
   ],
 })

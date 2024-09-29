@@ -5,8 +5,8 @@
 [circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
 [circleci-url]: https://circleci.com/gh/nestjs/nest
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
+<p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
+<p align="center">
 <a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
 <a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
 <a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
@@ -15,18 +15,27 @@
 <a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
 <a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
 <a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
+<a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
+<a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
+<a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
 </p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+This is a demo project built using the [NestJS](https://nestjs.com) framework to create an online store. The application showcases a basic online store with functionality for product management, order processing, and user authentication.
+
+## Features
+
+- Product listing and management
+- Cart and order management
+- User registration and login system
+- RESTful API with NestJS
+- MongoDB integration for database
+- Environment configuration for production and development modes
 
 ## Installation
+
+To get started, clone this repository and install the necessary dependencies:
 
 ```bash
 $ npm install
@@ -34,33 +43,62 @@ $ npm install
 
 ## Running the app
 
+Before running the application, ensure the database is properly set up by running migrations:
+
 ```bash
-# development
+# Run database migrations
+$ npx migrate-mongo up
+```
+
+Once the migrations are complete, you can run the app:
+
+```bash
+# development mode
 $ npm run start
 
-# watch mode
+# watch mode for live development
 $ npm run start:dev
 
 # production mode
 $ npm run start:prod
 ```
 
-## Test
+## Sample `.env` file
+
+Create a `.env` file in the root of your project to configure environment variables. Here's a sample `.env` file:
 
 ```bash
-# unit tests
+PORT=4200
+MONGO_CONNECTION_STRING=mongodb://localhost:27017/online-store #or Your connection string here
+SALT_ROUNDS=rounds in number
+
+# SMTP credentials for gmail
+EMAIL_ID=your email
+APP_PASSWORD=your pass key
+
+# JWT
+JWT_SECRET_KEY=some long jwt secret
+JWT_EXPIRATION_TIME=30m or 60s
+```
+
+Make sure to replace the values according to your local setup.
+
+## Testing
+
+```bash
+# run unit tests
 $ npm run test
 
-# e2e tests
+# run end-to-end tests
 $ npm run test:e2e
 
-# test coverage
+# generate test coverage report
 $ npm run test:cov
 ```
 
 ## Support
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Nest is an MIT-licensed open-source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
 
 ## Stay in touch
 
@@ -71,3 +109,7 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](LICENSE).
+
+```
+
+```
