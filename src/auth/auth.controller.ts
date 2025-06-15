@@ -33,17 +33,17 @@ export class AuthController {
   //   return this.authService.registerUser(user);
   // }
 
-  //TODO: phone verification for the client and customer
+  //TODO: phone verification for the admin and customer
   @HttpCode(HttpStatus.OK)
-  @Post('client-sign-up')
-  async registerClient(@Body() client: CreateUserDto) {
-    return this.authService.registerUser({ ...client, role: Role.client });
+  @Post('admin-sign-up')
+  async registerClient(@Body() admin: CreateUserDto) {
+    return this.authService.registerUser({ ...admin, role: Role.admin });
   }
 
   @HttpCode(HttpStatus.OK)
   @Post('customer-sign-up')
-  async registerCustomer(@Body() client: CreateUserDto) {
-    return this.authService.registerUser({ ...client, role: Role.customer });
+  async registerCustomer(@Body() customer: CreateUserDto) {
+    return this.authService.registerUser({ ...customer, role: Role.customer });
   }
 
   @HttpCode(HttpStatus.OK)
@@ -88,10 +88,10 @@ export class AuthController {
     description: 'Custom header',
   })
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.client)
-  @Get('client')
+  @Roles(Role.admin)
+  @Get('admin')
   getAdminRole() {
-    return 'user is client';
+    return 'user is admin';
   }
 
   //* Endpoint to test successful access to a protected customer route

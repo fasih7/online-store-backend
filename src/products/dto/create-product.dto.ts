@@ -3,6 +3,7 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
+  IsMongoId,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -47,6 +48,11 @@ export class CreateProductDto {
   @MinLength(1)
   @MaxLength(500)
   primaryImage: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsMongoId()
+  category: string;
 
   @ApiProperty()
   @IsArray()

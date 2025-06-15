@@ -6,7 +6,7 @@ import { MongoBaseDataAccess } from '../../global/data/mongoBaseDataAccess';
 
 @Injectable()
 export class UserRepo extends MongoBaseDataAccess {
-  constructor(@InjectModel(User.name) private userModel: Model<User>) {
+  constructor(@InjectModel(User.name) private readonly userModel: Model<User>) {
     super(userModel);
   }
 }

@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import mongoose, { HydratedDocument, Types } from 'mongoose';
+import mongoose, { HydratedDocument } from 'mongoose';
 import { User } from '../../user/schemas/user.schema';
+import { Category } from 'src/categories/schemas/category.schema';
 
 export type ProductDocument = HydratedDocument<Product>;
 
@@ -23,6 +24,13 @@ export class Product {
 
   @Prop()
   primaryImage: string;
+
+  @Prop({
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category',
+    required: true,
+  })
+  category: Category;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User' })
   userId: User;

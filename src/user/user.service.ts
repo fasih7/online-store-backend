@@ -7,7 +7,7 @@ import { MongoUpdateParams } from '../global/types/mongo.types';
 @Injectable()
 export class UserService {
   constructor(
-    private logger: LoggerService,
+    private readonly logger: LoggerService,
     private readonly userRepo: UserRepo,
   ) {}
 

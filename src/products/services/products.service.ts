@@ -6,7 +6,7 @@ import { GetManyProductsQuery } from '../dto/get-many-products-query.dto';
 
 @Injectable()
 export class ProductsService {
-  constructor(private productRepo: ProductRepo) {}
+  constructor(private readonly productRepo: ProductRepo) {}
 
   async createProduct(createProduct: CreateProductDto, user: any) {
     const dtoWithUserId = { ...createProduct, userId: user.sub };

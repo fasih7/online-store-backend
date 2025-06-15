@@ -22,8 +22,8 @@ import { GetManyProductsQuery } from '../dto/get-many-products-query.dto';
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.client)
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Roles(Role.admin)
   @Post('')
   async createProduct(
     @Body() createProductDto: CreateProductDto,
@@ -54,12 +54,12 @@ export class ProductsController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.client)
+  @Roles(Role.admin)
   @Put('/:id')
   async updateProductById(@Param('id') id: string) {}
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.client)
+  @Roles(Role.admin)
   @Delete('/:id')
   async deleteProductById(@Param('id') id: string) {}
 }

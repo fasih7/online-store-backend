@@ -10,7 +10,7 @@ import { getPaginationObject } from '../helpers/methods';
 
 //TODO: Add a response with data and pagination
 export class MongoBaseDataAccess {
-  constructor(private model: Model<any>) {}
+  constructor(private readonly model: Model<any>) {}
 
   //TODO: furnish for create many
   async create(data: any) {
