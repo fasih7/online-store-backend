@@ -13,8 +13,9 @@ import { AuthModule } from './auth/auth.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
-import { join } from 'path';
 import { ProductsModule } from './products/products.module';
+import { OrdersModule } from './orders/orders.module';
+import { CategoriesModule } from './categories/categories.module';
 
 @Module({
   imports: [
@@ -52,6 +53,8 @@ import { ProductsModule } from './products/products.module';
     AuthModule,
     NotificationsModule,
     ProductsModule,
+    OrdersModule,
+    CategoriesModule,
   ],
   controllers: [AppController],
   providers: [
