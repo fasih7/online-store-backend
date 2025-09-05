@@ -1,7 +1,9 @@
 import { Controller, Get } from '@nestjs/common';
 import { NotificationsService } from './services/notifications.service';
 import { EmailService } from './services/email.service';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Categories')
 @Controller('notifications')
 export class NotificationsController {
   constructor(

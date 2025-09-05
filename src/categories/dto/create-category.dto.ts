@@ -8,6 +8,16 @@ export class CreateCategoryDto {
   name: string;
 
   @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  slug: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  image: string;
+
+  @ApiProperty()
   @IsMongoId()
   @IsOptional()
   parentCategory?: string;

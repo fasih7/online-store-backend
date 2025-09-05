@@ -2,4 +2,5 @@
 export default () => ({
   port: +process.env.PORT || 3000,
   mongoConnectionString: process.env.MONGO_CONNECTION_STRING,
+  redisUrl: process.env.REDIS_URL,
 });

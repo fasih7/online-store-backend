@@ -11,3 +11,11 @@ export type FindQueryParamsType = MongoFindParams & {
     new?: boolean;
   };
 };
+
+export type UserFromToken = {
+  sub: string;
+  email: string;
+  role: string;
+  iat?: number;
+  exp?: number;
+}; //payload: { sub: user._id, email: user.email, role: user.role }

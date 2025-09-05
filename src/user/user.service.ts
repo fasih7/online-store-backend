@@ -1,8 +1,13 @@
-import { Injectable, UnprocessableEntityException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { LoggerService } from '../global/logger';
 import { Types } from 'mongoose';
 import { UserRepo } from './repos/user.repo';
 import { MongoUpdateParams } from '../global/types/mongo.types';
+import { User } from './schemas/user.schema';
 
 @Injectable()
 export class UserService {
@@ -11,7 +16,7 @@ export class UserService {
     private readonly userRepo: UserRepo,
   ) {}
 
-  async create(user: any) {
+  async create(user: Partial<User>) {
     this.logger.silly(UserService.name, this.create.name, 'started');
 
     try {
@@ -24,6 +29,12 @@ export class UserService {
         );
       throw error;
     }
+  }
+
+  async findOneById(_id: string | Types.ObjectId) {
+    const user = await this.userRepo.findOneById(_id);
+    const { password, status, role, ...rest } = user;
+    return rest;
   }
 
   async findOneByEmail(email: string) {

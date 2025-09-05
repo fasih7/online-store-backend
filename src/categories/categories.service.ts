@@ -10,8 +10,12 @@ export class CategoriesService {
     return await this.categoryRepo.create(createCategoryDto);
   }
 
-  findAll() {
-    return `This action returns all categories`;
+  async findAll() {
+    return await this.categoryRepo.findMany();
+  }
+
+  async findOneBySlug(slug: string) {
+    return await this.categoryRepo.findOne({ query: { slug } });
   }
 
   findOne(id: number) {

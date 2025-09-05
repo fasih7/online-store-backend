@@ -8,6 +8,7 @@ import {
   ValidateNested,
   IsNumber,
   Min,
+  IsOptional,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
@@ -45,6 +46,12 @@ export class CreateOrderDto {
   email: string;
 
   @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  @IsOptional()
+  token: string;
+
+  @ApiProperty()
   @IsPhoneNumber(null)
   phone: string;
 
@@ -54,8 +61,23 @@ export class CreateOrderDto {
   address: string;
 
   @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  city: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  province: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  zip: string;
+
+  @ApiProperty()
   @IsEnum(PaymentType)
-  paymentType: PaymentType;
+  paymentMethod: PaymentType;
 
   @ApiProperty()
   @IsArray()

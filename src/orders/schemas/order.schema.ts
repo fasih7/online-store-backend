@@ -21,8 +21,17 @@ export class Order {
   @Prop({ required: true })
   address: string;
 
+  @Prop({ required: true })
+  city: string;
+
+  @Prop({ required: true })
+  province: string;
+
   @Prop({ required: true, enum: ['cash'] }) // Add 'card' later if needed
-  paymentType: string;
+  paymentMethod: string;
+
+  @Prop({ required: true })
+  zip: string;
 
   @Prop({
     type: [
@@ -42,6 +51,15 @@ export class Order {
   //TODO: totalPrice should be calculated on BE again
   @Prop({ required: true })
   totalPrice: number;
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
+  userId: Types.ObjectId;
+
+  // @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User' })
+  // storeId: Types.ObjectId;
+
+  @Prop({ default: true })
+  guestOrder: boolean;
 
   @Prop({
     default: 'pending',

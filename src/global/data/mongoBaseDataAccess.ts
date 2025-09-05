@@ -1,4 +1,7 @@
-import { UnprocessableEntityException } from '@nestjs/common';
+import {
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { Model, Query, Types } from 'mongoose';
 import { GenObject } from '../types/shared-types';
 import {
@@ -34,8 +37,35 @@ export class MongoBaseDataAccess {
     return this.model.findOne(query, selections);
   }
 
-  async findOneById(_id: string | Types.ObjectId) {
-    return this.model.findById(_id);
+  async findOneById(
+    _id: string | Types.ObjectId,
+    populateFields?: { path: string; select?: string }[],
+  ): Promise<Record<string, any>> {
+    try {
+      const query = this.model.findById(_id);
+
+      if (populateFields) {
+        populateFields.forEach((field) => {
+          query.populate(field.path, field.select);
+        });
+      }
+
+      const response = await query.lean();
+
+      if (!response)
+        throw new NotFoundException({
+          message: `Data not found with this id`,
+        });
+      return response;
+    } catch (error) {
+      if (error.kind === 'ObjectId')
+        throw new UnprocessableEntityException({
+          message: `Invalid ID or Data not found`,
+          error,
+        });
+
+      throw error;
+    }
   }
 
   //TODO: furnish
@@ -44,6 +74,7 @@ export class MongoBaseDataAccess {
     populate?: { isPopulate: boolean; field: string },
   ): Promise<Query<any[], any, {}, any, 'find'>> {
     const { query = {}, selections = [], options = {} } = findQueryParams || {};
+    console.log('findMany options: ', findQueryParams);
 
     return this.model.find(query, selections, options);
   }
@@ -56,9 +87,9 @@ export class MongoBaseDataAccess {
     return await this.model.findOneAndUpdate(searchObject, updateData, options);
   }
 
-  async updateMany(searchObject: GenObject) {
-    return await this.model.updateMany(searchObject);
-  }
+  // async updateMany(searchObject: GenObject) {
+  //   return await this.model.updateMany(searchObject);
+  // }
 
   async findOneAndDelete(searchObject: GenObject) {
     return await this.model.findOneAndDelete(searchObject);

@@ -18,12 +18,22 @@ export class ProductsService {
     productQuery: GetManyProductsQuery,
     getPagination?: boolean,
   ) {
-    let { pageNumber, limit } = productQuery;
+    const { category: commaSeparedCategories, ...restQuery } = productQuery;
+
+    // Logic for category if category is not provided should not pass then
+    const category = commaSeparedCategories?.split(',');
+    const query = {
+      ...(category?.length &&
+        category[0] !== '' && { category: { $in: category } }),
+    };
+
+    let { pageNumber = 1, limit = 12 } = restQuery;
     pageNumber = +pageNumber;
     limit = +limit;
     return await this.productRepo.createQueryAndFindMany(
       {
-        options: { pagination: { pageNumber, limit }, ...productQuery },
+        query,
+        options: { pagination: { pageNumber, limit }, ...restQuery },
       },
       getPagination,
     );

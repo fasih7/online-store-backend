@@ -7,7 +7,7 @@ import { Product } from '../../products/schemas/product.schema';
 
 export type UserDocument = HydratedDocument<User>;
 
-@Schema()
+@Schema({ timestamps: true })
 export class User {
   @Prop()
   firstName: string;
@@ -21,6 +21,9 @@ export class User {
   @Prop()
   password: string;
 
+  @Prop({ isRequired: false })
+  phone: string;
+
   @Prop()
   token: Token;
 
@@ -32,6 +35,9 @@ export class User {
 
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Owner' }] })
   products: Product[];
+
+  @Prop({ default: false })
+  isGuest: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

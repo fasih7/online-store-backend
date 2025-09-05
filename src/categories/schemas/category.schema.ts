@@ -9,6 +9,12 @@ export class Category {
   @Prop({ required: true, unique: true })
   name: string;
 
+  @Prop({ required: true })
+  image: string;
+
+  @Prop({ required: true })
+  slug: string;
+
   @Prop({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Category',

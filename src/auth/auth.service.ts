@@ -1,11 +1,16 @@
 import {
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
   UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
-import { getTokenValues, isNotExpired } from './utils/helper-methods';
+import {
+  checkStatus,
+  getTokenValues,
+  isNotExpired,
+} from './utils/helper-methods';
 import { UserService } from '../user/user.service';
 import { SuccessResponse } from '../global/consts';
 import { EmailService } from '../notifications/services/email.service';
@@ -129,7 +134,11 @@ export class AuthService {
     const validate = await validatePassword(password, user?.password);
     if (!validate) throw new UnauthorizedException('Wrong Email or password');
 
+    if (!checkStatus(user.status))
+      throw new InternalServerErrorException('Something went wrong');
+
     const payload = { sub: user._id, email: user.email, role: user.role };
+
     return {
       access_token: await this.jwtService.signAsync(payload),
     };

@@ -17,7 +17,7 @@ export class Product {
   quantity: string;
 
   @Prop()
-  price: string;
+  price: number;
 
   @Prop()
   images: string[];

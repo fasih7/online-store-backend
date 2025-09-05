@@ -10,14 +10,14 @@ import {
 
 export class GetManyProductsQuery {
   @ApiProperty()
-  @IsNotEmpty()
+  @IsOptional()
   @IsNumber()
   @Min(1)
   @Transform(({ value }) => parseInt(value, 10), { toClassOnly: true })
   pageNumber: number;
 
   @ApiProperty()
-  @IsNotEmpty()
+  @IsOptional()
   @IsNumber()
   @Min(1)
   @Transform(({ value }) => parseInt(value, 10), { toClassOnly: true })
@@ -34,4 +34,9 @@ export class GetManyProductsQuery {
   @IsOptional()
   @IsString()
   sortOrder: string;
+
+  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  category?: string;
 }

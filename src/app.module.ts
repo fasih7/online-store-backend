@@ -16,6 +16,7 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handleba
 import { ProductsModule } from './products/products.module';
 import { OrdersModule } from './orders/orders.module';
 import { CategoriesModule } from './categories/categories.module';
+import { RedisModule } from '@nestjs-redis/client';
 
 @Module({
   imports: [
@@ -48,6 +49,24 @@ import { CategoriesModule } from './categories/categories.module';
         },
       },
     }),
+    RedisModule.forRoot({
+      type: 'client',
+      options: {
+        url: process.env.REDIS_URL || 'redis://localhost:6379',
+      },
+      isGlobal: true,
+    }),
+    // RedisModule.forRootAsync({
+    //   imports: [ConfigModule],
+    //   useFactory: (configService: ConfigService) => ({
+    //     type: 'client',
+    //     options: {
+    //       url:
+    //         configService.get<string>('redisUrl') || 'redis://localhost:6379',
+    //     },
+    //   }),
+    //   inject: [ConfigService],
+    // }),
     LoggerModule,
     UserModule,
     AuthModule,

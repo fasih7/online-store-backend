@@ -11,4 +11,31 @@ export class OrderRepo extends IMongoRepoBase {
   ) {
     super(orderModel);
   }
+
+  async createQueryAndFindById(id: string) {
+    const populateFields = [
+      {
+        path: 'items.productId',
+        select: 'title price',
+      },
+    ];
+    const response = await this.findOneById(id, populateFields);
+
+    response.items = this.flattenResponse(response.items, 'productId');
+    return response;
+  }
+
+  // Helper methods
+  private flattenResponse(values: any[], fieldName: string) {
+    return values.map((value) => {
+      const flatValue = value[fieldName];
+      console.log('flatValue: ', flatValue);
+      value[fieldName] = undefined;
+
+      return {
+        ...value,
+        ...flatValue,
+      };
+    });
+  }
 }

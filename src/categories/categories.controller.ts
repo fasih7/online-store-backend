@@ -15,7 +15,9 @@ import { JwtAuthGuard } from 'src/auth/gaurds/auth.gaurd';
 import { RolesGuard } from 'src/auth/role/role.guard';
 import { Roles } from 'src/auth/roles/roles.decorator';
 import { Role } from 'src/global/enums';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Categories')
 @Controller('categories')
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
@@ -35,6 +37,11 @@ export class CategoriesController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.categoriesService.findOne(+id);
+  }
+
+  @Get('/slug/:slug')
+  findOneBySlug(@Param('slug') slug: string) {
+    return this.categoriesService.findOneBySlug(slug);
   }
 
   @Patch(':id')
