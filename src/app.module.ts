@@ -17,16 +17,27 @@ import { ProductsModule } from './products/products.module';
 import { OrdersModule } from './orders/orders.module';
 import { CategoriesModule } from './categories/categories.module';
 import { RedisModule } from '@nestjs-redis/client';
+import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
+import databaseConfig from './config/database.config';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, load: [configuration] }),
-    MongooseModule.forRootAsync({
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [configuration, databaseConfig],
+    }),
+    // MongooseModule.forRootAsync({
+    //   imports: [ConfigModule],
+    //   useFactory: async (configService: ConfigService) => ({
+    //     uri: configService.get<string>('mongoConnectionString'),
+    //   }),
+    //   inject: [ConfigService],
+    // }),
+    TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        uri: configService.get<string>('mongoConnectionString'),
-      }),
       inject: [ConfigService],
+      useFactory: (config: ConfigService) =>
+        config.get<TypeOrmModuleOptions>('database')!,
     }),
     MailerModule.forRoot({
       transport: {

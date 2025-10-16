@@ -4,16 +4,23 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { LoggerService } from '../global/logger';
-import { Types } from 'mongoose';
-import { UserRepo } from './repos/user.repo';
-import { MongoUpdateParams } from '../global/types/mongo.types';
-import { User } from './schemas/user.schema';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+// import { Types } from 'mongoose';
+// import { UserRepo } from './repos/user.mongo.repo';
+// import { MongoUpdateParams } from '../global/types/mongo.types';
+// import { User } from './schemas/user.schema';
+import { UserPostgresRepo } from './repos/user.postgres.repo';
+import { User } from './entities/user.entity';
+import { Address } from './entities/address.entity';
+import { AddressRepo } from './repos/address.repo';
 
 @Injectable()
 export class UserService {
   constructor(
     private readonly logger: LoggerService,
-    private readonly userRepo: UserRepo,
+    private readonly userRepo: UserPostgresRepo,
+    private readonly addressRepo: AddressRepo,
   ) {}
 
   async create(user: Partial<User>) {
@@ -23,7 +30,8 @@ export class UserService {
       const result = await this.userRepo.create(user);
       return result;
     } catch (error) {
-      if (error.code === 11000)
+      if (error.code === '23505')
+        // PostgreSQL unique constraint violation
         throw new UnprocessableEntityException(
           'User with this email already exists',
         );
@@ -31,8 +39,8 @@ export class UserService {
     }
   }
 
-  async findOneById(_id: string | Types.ObjectId) {
-    const user = await this.userRepo.findOneById(_id);
+  async findOneById(id: string) {
+    const user = await this.userRepo.findOneById(id);
     const { password, status, role, ...rest } = user;
     return rest;
   }
@@ -40,38 +48,99 @@ export class UserService {
   async findOneByEmail(email: string) {
     this.logger.silly(UserService.name, this.findOneByEmail.name, 'started');
 
-    const user = await this.userRepo.findOne({ query: { email } });
+    const user = await this.userRepo.findByEmail(email);
     console.log('user: ', user);
     return user;
   }
 
-  async findOneAndUpdate({
-    query,
-    updateData: updateUser,
-    options,
-  }: MongoUpdateParams) {
+  async findOneAndUpdate(id: string, updateUser: Partial<User>) {
     this.logger.silly(UserService.name, this.findOneAndUpdate.name, 'started');
 
-    return await this.userRepo.findOneAndUpdate({
-      query,
-      updateData: updateUser,
-      options,
-    });
+    return await this.userRepo.updateOneById(id, updateUser);
   }
 
-  async findByIdAndUpdate(
-    _id: string | Types.ObjectId,
-    updateUser: Record<string, any>,
-  ) {
+  async findByIdAndUpdate(id: string, updateUser: Record<string, any>) {
     this.logger.silly(UserService.name, this.findByIdAndUpdate.name, 'started');
 
-    return await this.userRepo.findOneAndUpdate({
-      query: { _id },
-      updateData: updateUser,
-    });
+    return await this.userRepo.updateOneById(id, updateUser);
   }
 
   remove(id: number) {
     return `This action removes a #${id} user`;
+  }
+
+  async findAddressesByCondition(
+    condition: any, // TODO Partial<Address> & { userId: string } didn't work, will come to it later
+  ) {
+    this.logger.silly(
+      UserService.name,
+      this.findAddressesByCondition.name,
+      'started',
+    );
+
+    return await this.addressRepo.findMany({ where: condition });
+  }
+
+  // Add Address
+  async addAddress(
+    userId: string,
+    addressData: Partial<Address>,
+  ): Promise<Address> {
+    const user = await this.userRepo.findOne({
+      where: { id: userId },
+      relations: ['addresses'], // todo: need just count
+    });
+    if (!user) throw new Error('User not found');
+    if (user.addresses.length >= 5)
+      throw new Error('Maximum 5 addresses allowed');
+
+    // Todo: improve this to be done in one query
+    if (addressData.isDefault) {
+      for (const addr of user.addresses) {
+        if (addr.isDefault) {
+          await this.addressRepo.updateOneById(addr.id, { isDefault: false });
+        }
+      }
+    }
+
+    const address = await this.addressRepo.create({ ...addressData, user });
+    return address;
+  }
+
+  // Update Address
+  async updateAddress(
+    userId: string,
+    addressData: Partial<Address>,
+  ): Promise<Address> {
+    const address = await this.addressRepo.findOne({
+      where: { id: addressData.id, user: { id: userId } },
+    });
+    if (!address) throw new Error('Address not found');
+
+    // todo: need to optimize, this can be done in one query
+    if (addressData.isDefault) {
+      const defaultAddress = await this.addressRepo.findOne({
+        where: { user: { id: userId }, isDefault: true },
+      });
+      if (defaultAddress && defaultAddress.id !== address.id) {
+        await this.addressRepo.updateOneById(defaultAddress.id, {
+          isDefault: false,
+        });
+      }
+    }
+
+    Object.assign(address, addressData);
+    return this.addressRepo.updateOneById(address.id, address);
+  }
+
+  // Delete Address
+  async deleteAddress(addressId: string, userId: string): Promise<void> {
+    // const address = await this.addressRepo.findOne({
+    //   where: { id: addressId, user: { id: userId } },
+    // });
+    // if (!address) throw new Error('Address not found');
+
+    // await this.addressRepo.deleteOneById(addressId);
+    await this.addressRepo.deleteMany({ user: { id: userId }, id: addressId });
   }
 }

@@ -6,7 +6,8 @@ import {
 } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
-import { OrderRepo } from './repos/order.repo';
+// import { OrderRepo } from './repos/order.mongo.repo';
+import { OrderPostgresRepo } from './repos/order.postgres.repo';
 import { EmailService } from 'src/notifications/services/email.service';
 import { UserService } from 'src/user/user.service';
 import { SuccessResponse } from 'src/global/consts';
@@ -16,12 +17,13 @@ import { UserFromToken } from 'src/global/types/shared-types';
 import { VerifyEmailDTO } from './dto/verify-email.dto';
 import { getTokenValues } from '../auth/utils/helper-methods';
 import { InjectRedis, type Redis } from '@nestjs-redis/client';
+import { GetUserOrdersDto } from './dto/orders.dtos';
 
 @Injectable()
 export class OrdersService {
   constructor(
     @InjectRedis() private readonly redis: Redis,
-    private readonly orderRepo: OrderRepo,
+    private readonly orderRepo: OrderPostgresRepo,
     private readonly emailService: EmailService,
     private readonly userService: UserService,
   ) {}
@@ -57,14 +59,20 @@ export class OrdersService {
       )
         throw new UnauthorizedException('Incorrect/Expired token');
 
-      userId = user._id;
+      userId = user.id;
       guestOrder = true;
     }
-    const createdOrder = await this.orderRepo.create({
-      ...createOrderDto,
-      userId,
-      guestOrder,
-    });
+
+    // Extract items from createOrderDto for PostgreSQL structure
+    const { items, ...orderData } = createOrderDto;
+    const createdOrder = await this.orderRepo.createOrderWithItems(
+      {
+        ...orderData,
+        userId,
+        guestOrder,
+      },
+      items,
+    );
     // await this.emailService.sendMail(
     //   createOrderDto.email,
     //   'Order Confirmation',
@@ -91,7 +99,28 @@ export class OrdersService {
   }
 
   async findOne(id: string) {
-    return await this.orderRepo.createQueryAndFindById(id);
+    return await this.orderRepo.findOrderWithItems(id);
+  }
+
+  async getOrdersForUser(userId: string, query: GetUserOrdersDto) {
+    const { page, limit, getOrderItems } = query;
+
+    const { data, total } = await this.orderRepo.findByUser(
+      userId,
+      page,
+      limit,
+      getOrderItems,
+    );
+
+    return {
+      data,
+      total,
+      pagination: {
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   update(id: number, updateOrderDto: UpdateOrderDto) {

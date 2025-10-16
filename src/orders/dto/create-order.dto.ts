@@ -12,11 +12,12 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
+import { PaymentMethod } from '../entities/order.entity';
 
-enum PaymentType {
-  CASH = 'cash',
-  // Add other payment types later, e.g. CARD = 'card', PAYPAL = 'paypal'
-}
+// enum PaymentType {
+//   CASH = 'cash',
+//   // Add other payment types later, e.g. CARD = 'card', PAYPAL = 'paypal'
+// }
 
 class CartItemDto {
   @ApiProperty()
@@ -28,6 +29,11 @@ class CartItemDto {
   @IsNumber()
   @Min(1)
   quantity: number;
+
+  @ApiProperty()
+  @IsNumber()
+  @Min(0)
+  price: number;
 }
 
 export class CreateOrderDto {
@@ -76,8 +82,8 @@ export class CreateOrderDto {
   zip: string;
 
   @ApiProperty()
-  @IsEnum(PaymentType)
-  paymentMethod: PaymentType;
+  @IsEnum(PaymentMethod)
+  paymentMethod: PaymentMethod;
 
   @ApiProperty()
   @IsArray()

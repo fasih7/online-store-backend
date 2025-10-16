@@ -1,16 +1,23 @@
 import { Injectable } from '@nestjs/common';
 import { CreateProductDto } from '../dto/create-product.dto';
-import { ProductRepo } from '../repo/product.repo';
+// import { ProductRepo } from '../repo/product.mongo.repo';
+import { ProductPostgresRepo } from '../repo/product.postgres.repo';
 import { SuccessResponse } from '../../global/consts';
 import { GetManyProductsQuery } from '../dto/get-many-products-query.dto';
+import { SearchProductsDto } from '../dto/search-products.dto';
 
 @Injectable()
 export class ProductsService {
-  constructor(private readonly productRepo: ProductRepo) {}
+  constructor(private readonly productRepo: ProductPostgresRepo) {}
 
   async createProduct(createProduct: CreateProductDto, user: any) {
-    const dtoWithUserId = { ...createProduct, userId: user.sub };
-    await this.productRepo.create(dtoWithUserId);
+    const { category, quantity, ...productData } = createProduct;
+    const productToCreate = {
+      ...productData,
+      userId: user.sub,
+      categoryId: category, // Map category to categoryId
+    };
+    await this.productRepo.create(productToCreate);
     return SuccessResponse;
   }
 
@@ -21,11 +28,13 @@ export class ProductsService {
     const { category: commaSeparedCategories, ...restQuery } = productQuery;
 
     // Logic for category if category is not provided should not pass then
-    const category = commaSeparedCategories?.split(',');
+    const categoryIds = commaSeparedCategories?.split(',');
     const query = {
-      ...(category?.length &&
-        category[0] !== '' && { category: { $in: category } }),
+      ...(categoryIds?.length &&
+        categoryIds[0] !== '' && { categoryId: categoryIds }), // PostgreSQL uses IN for array matching
     };
+
+    console.log({ query });
 
     let { pageNumber = 1, limit = 12 } = restQuery;
     pageNumber = +pageNumber;
@@ -39,7 +48,21 @@ export class ProductsService {
     );
   }
 
-  async getProductById(_id: string) {
-    return await this.productRepo.findOneById(_id);
+  async getProductById(id: string) {
+    return await this.productRepo.findOneById(id);
+  }
+
+  async searchProducts(searchQuery: SearchProductsDto) {
+    const { searchTerm, category, ...restQuery } = searchQuery;
+
+    // Parse category IDs if provided
+    const categoryIds = category?.split(',').filter((id) => id.trim() !== '');
+
+    const searchOptions = {
+      ...restQuery,
+      categoryIds,
+    };
+
+    return await this.productRepo.searchProductsV2(searchTerm, searchOptions);
   }
 }

@@ -9,6 +9,7 @@ import {
   UseGuards,
   Request,
   Query,
+  Req,
 } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -16,6 +17,8 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 import { OptionalJwtAuthGuard } from 'src/auth/gaurds/optional-jwt.gaurd';
 import { VerifyEmailDTO } from './dto/verify-email.dto';
 import { ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/gaurds/auth.gaurd';
+import { GetUserOrdersDto } from './dto/orders.dtos';
 
 @ApiTags('Orders')
 @Controller('orders')
@@ -32,6 +35,13 @@ export class OrdersController {
   @Get()
   findAll() {
     return this.ordersService.findAll();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  async getMyOrders(@Req() req: any, @Query() query: GetUserOrdersDto) {
+    const userId = req.user.sub;
+    return this.ordersService.getOrdersForUser(userId, query);
   }
 
   @Get(':id')

@@ -1,13 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-import { CategoryRepo } from './repos/category.repo';
+// import { CategoryRepo } from './repos/category.mongo.repo';
+import { CategoryPostgresRepo } from './repos/category.postgres.repo';
 
 @Injectable()
 export class CategoriesService {
-  constructor(private readonly categoryRepo: CategoryRepo) {}
+  constructor(private readonly categoryRepo: CategoryPostgresRepo) {}
   async create(createCategoryDto: CreateCategoryDto) {
-    return await this.categoryRepo.create(createCategoryDto);
+    const { parentCategory, ...categoryData } = createCategoryDto;
+    return await this.categoryRepo.create({
+      ...categoryData,
+      parentCategoryId: parentCategory, // Map parentCategory string to parentCategoryId
+    });
   }
 
   async findAll() {
@@ -15,7 +20,7 @@ export class CategoriesService {
   }
 
   async findOneBySlug(slug: string) {
-    return await this.categoryRepo.findOne({ query: { slug } });
+    return await this.categoryRepo.findBySlug(slug);
   }
 
   findOne(id: number) {

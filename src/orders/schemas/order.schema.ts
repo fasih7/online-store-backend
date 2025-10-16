@@ -62,8 +62,8 @@ export class Order {
   guestOrder: boolean;
 
   @Prop({
-    default: 'pending',
-    enum: ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'],
+    default: 'Pending',
+    enum: ['Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'],
   })
   status: string;
 }

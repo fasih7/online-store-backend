@@ -16,3 +16,22 @@ export function getPaginationObject(
     hasNextPage,
   };
 }
+
+export function getPostgresPaginationObject(
+  currentPage: number,
+  itemsPerPage: number,
+  totalItems: number,
+) {
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const hasPreviousPage = currentPage > 1;
+  const hasNextPage = currentPage < totalPages;
+
+  return {
+    currentPage,
+    totalPages,
+    totalItems,
+    itemsPerPage,
+    hasNextPage,
+    hasPreviousPage,
+  };
+}

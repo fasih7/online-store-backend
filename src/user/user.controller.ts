@@ -14,6 +14,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from 'src/auth/gaurds/auth.gaurd';
 import { ApiTags } from '@nestjs/swagger';
+import { Address } from './entities/address.entity';
 
 @ApiTags('User')
 @Controller('user')
@@ -28,28 +29,50 @@ export class UserController {
     return this.userService.findOneById(request.user.sub);
   }
 
-  // @Post()
-  // create(@Body() createUserDto: CreateUserDto) {
-  //   return this.userService.create(createUserDto);
-  // }
+  @UseGuards(JwtAuthGuard)
+  @Patch('update')
+  async updateUser(
+    @Req() request: Record<string, any>,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    const userId = request.user.sub;
+    return this.userService.findOneAndUpdate(userId, updateUserDto);
+  }
 
-  // @Get()
-  // findAll() {
-  //   return this.userService.findAll();
-  // }
+  @UseGuards(JwtAuthGuard)
+  @Post('address')
+  async createAddress(
+    @Req() request: Record<string, any>,
+    @Body() addressData: Partial<Address>,
+  ) {
+    const userId = request.user.sub;
+    return this.userService.addAddress(userId, addressData);
+  }
 
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return this.userService.findOne(+id);
-  // }
+  @UseGuards(JwtAuthGuard)
+  @Get('address')
+  async getAddresses(@Req() request: Record<string, any>) {
+    const userId = request.user.sub;
+    return this.userService.findAddressesByCondition({ user: { id: userId } });
+  }
 
-  // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-  //   return this.userService.update(+id, updateUserDto);
-  // }
+  @UseGuards(JwtAuthGuard)
+  @Patch('address')
+  async updateAddress(
+    @Req() request: Record<string, any>,
+    @Body() addressData: Partial<Address>,
+  ) {
+    const userId = request.user.sub;
+    return this.userService.updateAddress(userId, addressData);
+  }
 
-  // @Delete(':id')
-  // remove(@Param('id') id: string) {
-  //   return this.userService.remove(+id);
-  // }
+  @UseGuards(JwtAuthGuard)
+  @Delete('address/:id')
+  async deleteAddress(
+    @Param('id') addressId: string,
+    @Req() request: Record<string, any>,
+  ) {
+    const userId = request.user.sub;
+    return this.userService.deleteAddress(addressId, userId);
+  }
 }

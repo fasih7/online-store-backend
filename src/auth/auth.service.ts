@@ -62,12 +62,11 @@ export class AuthService {
 
   async verifyUserEmail({ email, token }) {
     //TODO: add token restriction to 3
-    const query: MongoUpdateParams = {
-      query: { email },
-      updateData: { $inc: { 'token.tries': -1 } },
-      options: { new: false },
-    };
-    const user = await this.userService.findOneAndUpdate(query);
+    const user = await this.userService.findOneByEmail(email);
+    if (user && user.token) {
+      user.token.tries = user.token.tries - 1;
+      await this.userService.findOneAndUpdate(user.id, { token: user.token });
+    }
 
     if (!user || user.status !== Status.pending)
       throw new NotFoundException('Not found');
@@ -87,13 +86,13 @@ export class AuthService {
       throw new UnauthorizedException('Token has been expired');
     }
 
-    const confirmedUser = await this.userService.findByIdAndUpdate(user._id, {
+    const confirmedUser = await this.userService.findByIdAndUpdate(user.id, {
       status: Status.active,
-      token: {},
+      token: null,
     });
 
     const payload = {
-      sub: confirmedUser._id,
+      sub: confirmedUser.id,
       email: confirmedUser.email,
       role: confirmedUser.role,
     };
@@ -109,8 +108,7 @@ export class AuthService {
       throw new NotFoundException('Not found');
 
     const token = getTokenValues();
-    user.token = token;
-    await user.save();
+    await this.userService.findOneAndUpdate(user.id, { token });
 
     // Send Email with Token in the backGround
     this.emailService.sendMail(
@@ -137,7 +135,7 @@ export class AuthService {
     if (!checkStatus(user.status))
       throw new InternalServerErrorException('Something went wrong');
 
-    const payload = { sub: user._id, email: user.email, role: user.role };
+    const payload = { sub: user.id, email: user.email, role: user.role };
 
     return {
       access_token: await this.jwtService.signAsync(payload),
@@ -153,8 +151,10 @@ export class AuthService {
     const validate = await validatePassword(oldPassword, user?.password);
     if (!validate) throw new UnauthorizedException('Wrong Email or password');
 
-    user.password = await hashWithBcryptJS(newPassword);
-    await user.save();
+    const hashedPassword = await hashWithBcryptJS(newPassword);
+    await this.userService.findOneAndUpdate(user.id, {
+      password: hashedPassword,
+    });
 
     return SuccessResponse;
   }
@@ -168,8 +168,7 @@ export class AuthService {
       throw new UnauthorizedException('User has been blocked');
 
     const token = getTokenValues();
-    user.token = token;
-    await user.save();
+    await this.userService.findOneAndUpdate(user.id, { token });
 
     let subject = 'Password Recovery',
       template = './forgot-password-verification.hbs';
@@ -204,8 +203,10 @@ export class AuthService {
     }
 
     const newPassword = await hashWithBcryptJS(password);
-    user.password = newPassword;
-    await user.save();
+    await this.userService.findOneAndUpdate(user.id, {
+      password: newPassword,
+      token: null,
+    });
 
     return SuccessResponse;
   }

@@ -17,6 +17,7 @@ import { RolesGuard } from '../../auth/role/role.guard';
 import { Role } from '../../global/enums';
 import { Roles } from '../../auth/roles/roles.decorator';
 import { GetManyProductsQuery } from '../dto/get-many-products-query.dto';
+import { SearchProductsDto } from '../dto/search-products.dto';
 import { ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Products')
@@ -53,6 +54,11 @@ export class ProductsController {
   @Get('product/:id')
   async getProductById(@Param('id') id: string) {
     return this.productsService.getProductById(id);
+  }
+
+  @Get('search')
+  async searchProducts(@Query() searchQuery: SearchProductsDto) {
+    return await this.productsService.searchProducts(searchQuery);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
