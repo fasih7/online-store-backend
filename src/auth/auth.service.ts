@@ -20,10 +20,6 @@ import { LoginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { ChangePassDto } from './dto/change-pass.dto';
 import { Role } from '../global/enums';
-import {
-  MongoFindParams,
-  MongoUpdateParams,
-} from '../global/types/mongo.types';
 
 @Injectable()
 export class AuthService {
@@ -37,17 +33,28 @@ export class AuthService {
   //TODO: Implementation for SSO
 
   async registerUser(user: CreateUserDto & { role: Role }) {
+    const { email } = user;
     //bcryptjs used for issues with python dependency for bcrypt
     //Ideally bcrypt should be used as it is much faster, replace the method in utils if that is preferred
-    user.password = await hashWithBcryptJS(user.password);
+    try {
+      user.password = await hashWithBcryptJS(user.password);
 
-    const token = getTokenValues();
+      const token = getTokenValues();
 
-    const createdUser = await this.userService.create({
-      ...user,
-      status: Status.pending,
-      token,
-    });
+      const createdUser = await this.userService.create({
+        ...user,
+        status: Status.pending,
+        token,
+      });
+      if (createdUser) return SuccessResponse;
+    } catch (error) {
+      if (error.status === 422) {
+        const user = await this.userService.findOneByEmail(email);
+        if (!user || user.status === Status.pending)
+          throw new UnauthorizedException('Email is pending verification');
+      }
+      throw error;
+    }
 
     // Send Email with Token in the backGround
     // this.emailService.sendMail(
@@ -56,8 +63,6 @@ export class AuthService {
     //   './signup-verification.hbs',
     //   { token: token.value },
     // );
-
-    if (createdUser) return SuccessResponse;
   }
 
   async verifyUserEmail({ email, token }) {
@@ -77,7 +82,10 @@ export class AuthService {
       );
     }
 
-    if (user.token.value !== token)
+    //todo: temp to bypass email verification
+    const byPassToken = process.env.NODE_ENV === 'local' && token === '852000';
+
+    if (user.token.value !== token && !byPassToken)
       throw new UnauthorizedException(
         `Incorrect token. ${user.token.tries} tries left`,
       ); //Todo: handle try/tries
@@ -110,15 +118,16 @@ export class AuthService {
     const token = getTokenValues();
     await this.userService.findOneAndUpdate(user.id, { token });
 
+    //TODO: it breaks app
     // Send Email with Token in the backGround
-    this.emailService.sendMail(
-      email,
-      'Email Verification',
-      './signup-verification.hbs',
-      {
-        token: token.value,
-      },
-    );
+    // this.emailService.sendMail(
+    //   email,
+    //   'Email Verification',
+    //   './signup-verification.hbs',
+    //   {
+    //     token: token.value,
+    //   },
+    // );
 
     return SuccessResponse;
   }

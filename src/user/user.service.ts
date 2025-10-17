@@ -30,7 +30,7 @@ export class UserService {
       const result = await this.userRepo.create(user);
       return result;
     } catch (error) {
-      if (error.code === '23505')
+      if (error.response.error === '23505')
         // PostgreSQL unique constraint violation
         throw new UnprocessableEntityException(
           'User with this email already exists',

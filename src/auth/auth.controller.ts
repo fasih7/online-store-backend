@@ -41,13 +41,13 @@ export class AuthController {
   }
 
   @HttpCode(HttpStatus.OK)
-  @Post('customer-sign-up')
+  @Post('sign-up')
   async registerCustomer(@Body() customer: CreateUserDto) {
     return this.authService.registerUser({ ...customer, role: Role.customer });
   }
 
   @HttpCode(HttpStatus.OK)
-  @Post('verify')
+  @Post('verify-email')
   verifyUserEmail(@Body() verifyBody: VerifyUserDto) {
     return this.authService.verifyUserEmail(verifyBody);
   }
