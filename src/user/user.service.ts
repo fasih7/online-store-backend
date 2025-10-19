@@ -14,6 +14,7 @@ import { UserPostgresRepo } from './repos/user.postgres.repo';
 import { User } from './entities/user.entity';
 import { Address } from './entities/address.entity';
 import { AddressRepo } from './repos/address.repo';
+import { SuccessResponse } from '../global/consts';
 
 @Injectable()
 export class UserService {
@@ -45,18 +46,24 @@ export class UserService {
     return rest;
   }
 
+  async findOneByIdWithRole(id: string) {
+    const user = await this.userRepo.findOneById(id);
+    const { password, status, ...rest } = user;
+    return rest;
+  }
+
   async findOneByEmail(email: string) {
     this.logger.silly(UserService.name, this.findOneByEmail.name, 'started');
 
     const user = await this.userRepo.findByEmail(email);
-    console.log('user: ', user);
     return user;
   }
 
   async findOneAndUpdate(id: string, updateUser: Partial<User>) {
     this.logger.silly(UserService.name, this.findOneAndUpdate.name, 'started');
 
-    return await this.userRepo.updateOneById(id, updateUser);
+    await this.userRepo.updateOneById(id, updateUser);
+    return SuccessResponse;
   }
 
   async findByIdAndUpdate(id: string, updateUser: Record<string, any>) {

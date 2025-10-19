@@ -55,6 +55,9 @@ export class User {
   })
   role: Role;
 
+  @Column({ type: 'text', nullable: true })
+  hashedRt?: string | null;
+
   @Column({ type: 'boolean', default: false })
   isGuest: boolean;
 

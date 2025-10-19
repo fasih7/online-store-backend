@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Req,
+  BadRequestException,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -24,9 +25,7 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   @Get('current-user')
   async findAll(@Req() request: Record<string, any>) {
-    console.log('request: ', request.user);
-
-    return this.userService.findOneById(request.user.sub);
+    return this.userService.findOneById(request.user.id);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -35,7 +34,10 @@ export class UserController {
     @Req() request: Record<string, any>,
     @Body() updateUserDto: UpdateUserDto,
   ) {
-    const userId = request.user.sub;
+    const { id: userId, email } = request.user;
+    if (email !== updateUserDto.email)
+      throw new BadRequestException('Email cannot be changed');
+
     return this.userService.findOneAndUpdate(userId, updateUserDto);
   }
 
@@ -45,14 +47,14 @@ export class UserController {
     @Req() request: Record<string, any>,
     @Body() addressData: Partial<Address>,
   ) {
-    const userId = request.user.sub;
+    const userId = request.user.id;
     return this.userService.addAddress(userId, addressData);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('address')
   async getAddresses(@Req() request: Record<string, any>) {
-    const userId = request.user.sub;
+    const userId = request.user.id;
     return this.userService.findAddressesByCondition({ user: { id: userId } });
   }
 
@@ -62,7 +64,7 @@ export class UserController {
     @Req() request: Record<string, any>,
     @Body() addressData: Partial<Address>,
   ) {
-    const userId = request.user.sub;
+    const userId = request.user.id;
     return this.userService.updateAddress(userId, addressData);
   }
 
@@ -72,7 +74,7 @@ export class UserController {
     @Param('id') addressId: string,
     @Req() request: Record<string, any>,
   ) {
-    const userId = request.user.sub;
+    const userId = request.user.id;
     return this.userService.deleteAddress(addressId, userId);
   }
 }

@@ -17,8 +17,6 @@ export class FeaturedProductsController {
 
   @Post()
   addFeaturedProduct(@Body('product') featuredProduct: any) {
-    console.log(featuredProduct);
-
     return this.featuredProductService.createFeatureProduct(featuredProduct);
   }
 

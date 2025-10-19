@@ -1,20 +1,63 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { CreateProductDto } from '../dto/create-product.dto';
+import { UpdateProductDto } from '../dto/update-product.dto';
 // import { ProductRepo } from '../repo/product.mongo.repo';
 import { ProductPostgresRepo } from '../repo/product.postgres.repo';
 import { SuccessResponse } from '../../global/consts';
 import { GetManyProductsQuery } from '../dto/get-many-products-query.dto';
 import { SearchProductsDto } from '../dto/search-products.dto';
+import { FileUploadService } from './file-upload.service';
 
 @Injectable()
 export class ProductsService {
-  constructor(private readonly productRepo: ProductPostgresRepo) {}
+  constructor(
+    private readonly productRepo: ProductPostgresRepo,
+    private readonly fileUploadService: FileUploadService,
+  ) {}
 
-  async createProduct(createProduct: CreateProductDto, user: any) {
-    const { category, quantity, ...productData } = createProduct;
+  async createProduct(
+    createProduct: CreateProductDto,
+    user: any,
+    files?: {
+      primaryImage?: Express.Multer.File[];
+      images?: Express.Multer.File[];
+    },
+  ) {
+    const { category, ...productData } = createProduct;
+
+    // Process uploaded files - images are ONLY from file uploads now
+    let primaryImagePath: string | undefined;
+    let additionalImagePaths: string[] = [];
+
+    if (files?.primaryImage && files.primaryImage.length > 0) {
+      const primaryImagePaths = await this.fileUploadService.saveFiles(
+        files.primaryImage,
+      );
+      primaryImagePath = primaryImagePaths[0];
+    }
+
+    if (files?.images && files.images.length > 0) {
+      additionalImagePaths = await this.fileUploadService.saveFiles(
+        files.images,
+      );
+    }
+
+    // Primary image is required - must be uploaded as file
+    if (!primaryImagePath) {
+      throw new BadRequestException(
+        'Primary image is required. Please upload a primary image file.',
+      );
+    }
+
     const productToCreate = {
       ...productData,
-      userId: user.sub,
+      primaryImage: primaryImagePath,
+      images: additionalImagePaths,
+      userId: user.id,
       categoryId: category, // Map category to categoryId
     };
     await this.productRepo.create(productToCreate);
@@ -34,8 +77,6 @@ export class ProductsService {
         categoryIds[0] !== '' && { categoryId: categoryIds }), // PostgreSQL uses IN for array matching
     };
 
-    console.log({ query });
-
     let { pageNumber = 1, limit = 12 } = restQuery;
     pageNumber = +pageNumber;
     limit = +limit;
@@ -50,6 +91,90 @@ export class ProductsService {
 
   async getProductById(id: string) {
     return await this.productRepo.findOneById(id);
+  }
+
+  async updateProduct(
+    id: string,
+    updateProductDto: UpdateProductDto,
+    files?: {
+      primaryImage?: Express.Multer.File[];
+      images?: Express.Multer.File[];
+    },
+  ) {
+    // Fetch existing product
+    const existingProduct = await this.productRepo.findOneById(id);
+    if (!existingProduct) {
+      throw new NotFoundException('Product not found');
+    }
+
+    const { imagesToRemove, ...updateData } = updateProductDto;
+
+    // Process new uploaded files
+    let newPrimaryImagePath: string | undefined;
+    let newImagePaths: string[] = [];
+
+    if (files?.primaryImage && files.primaryImage.length > 0) {
+      const primaryImagePaths = await this.fileUploadService.saveFiles(
+        files.primaryImage,
+      );
+      newPrimaryImagePath = primaryImagePaths[0];
+    }
+
+    if (files?.images && files.images.length > 0) {
+      newImagePaths = await this.fileUploadService.saveFiles(files.images);
+    }
+
+    // Handle image removal
+    if (imagesToRemove && imagesToRemove.length > 0) {
+      await this.fileUploadService.deleteMultipleFiles(imagesToRemove);
+    }
+
+    // Update images array
+    let updatedImages = [...existingProduct.images];
+
+    // Remove specified images
+    if (imagesToRemove && imagesToRemove.length > 0) {
+      updatedImages = updatedImages.filter(
+        (img) => !imagesToRemove.includes(img),
+      );
+    }
+
+    // Add new images
+    updatedImages = [...updatedImages, ...newImagePaths];
+
+    // Prepare update data
+    const { category, ...restUpdateData } = updateData;
+    const finalUpdateData = {
+      ...restUpdateData,
+      images: updatedImages,
+      // Use new primary image if uploaded, otherwise keep existing
+      primaryImage: newPrimaryImagePath || existingProduct.primaryImage,
+      // Map category to categoryId if provided
+      ...(category && { categoryId: category }),
+    };
+
+    await this.productRepo.updateOneById(id, finalUpdateData);
+    return SuccessResponse;
+  }
+
+  async deleteProduct(id: string) {
+    // Fetch product to get associated images
+    const product = await this.productRepo.findOneById(id);
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    // Delete all associated image files (including primary image)
+    const allImages = [product.primaryImage, ...(product.images || [])].filter(
+      Boolean,
+    );
+    if (allImages.length > 0) {
+      await this.fileUploadService.deleteFilesFromProduct(allImages);
+    }
+
+    // Delete product from database
+    await this.productRepo.deleteOneById(id);
+    return SuccessResponse;
   }
 
   async searchProducts(searchQuery: SearchProductsDto) {

@@ -40,7 +40,7 @@ export class OrdersController {
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async getMyOrders(@Req() req: any, @Query() query: GetUserOrdersDto) {
-    const userId = req.user.sub;
+    const userId = req.user.id;
     return this.ordersService.getOrdersForUser(userId, query);
   }
 

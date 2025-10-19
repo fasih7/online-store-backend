@@ -33,25 +33,15 @@ export class OrdersService {
     let guestOrder = false;
 
     if (user) {
-      userId = user.sub;
+      userId = user.id;
     } else {
       let user = await this.userService.findOneByEmail(createOrderDto.email);
-      console.log('isUser?: ', !!user);
 
       if (!user) {
         const createUserParams = generateCreateUserParams(createOrderDto);
-        console.log('createUserParams: ', createUserParams);
 
         user = await this.userService.create(createUserParams);
-        console.log('Created User: ', user);
       }
-      console.log('token name at order: ', getTokenName(user.email));
-
-      console.log('received token: ', createOrderDto.token);
-      console.log(
-        'user token: ',
-        await this.redis.get(getTokenName(user.email)),
-      );
 
       if (
         createOrderDto.token !==
@@ -154,9 +144,7 @@ export class OrdersService {
     //   { token: token.value },
     // );
 
-    console.log('token name at generation: ', getTokenName(params.email));
     await this.redis.set(getTokenName(params.email), token.value, { EX: 180 });
-    console.log('token: ', token);
 
     return SuccessResponse;
   }
@@ -168,7 +156,6 @@ export class OrdersService {
     if (type === 'get') result = await this.redis.get('test');
     if (type === 'del') result = await this.redis.del('test');
     if (type === 'ttl') result = await this.redis.ttl('test');
-    console.log('result: ', result);
 
     // if (type === 'reset') result = await this.cacheManager.clear();
     return result;
@@ -178,7 +165,6 @@ export class OrdersService {
 // Helper methods
 
 function generateCreateUserParams(params: CreateOrderDto) {
-  console.log('role: ', Role.customer);
   return {
     firstName: params.firstName,
     lastName: params.lastName,

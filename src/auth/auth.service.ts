@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -20,6 +21,9 @@ import { LoginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { ChangePassDto } from './dto/change-pass.dto';
 import { Role } from '../global/enums';
+import { User } from '../user/entities';
+import { PayloadType } from '../global/types/shared-types';
+import { setRtCookie } from '../global/cookies';
 
 @Injectable()
 export class AuthService {
@@ -65,7 +69,7 @@ export class AuthService {
     // );
   }
 
-  async verifyUserEmail({ email, token }) {
+  async verifyUserEmail({ email, token }, res: any) {
     //TODO: add token restriction to 3
     const user = await this.userService.findOneByEmail(email);
     if (user && user.token) {
@@ -99,14 +103,11 @@ export class AuthService {
       token: null,
     });
 
-    const payload = {
-      sub: confirmedUser.id,
-      email: confirmedUser.email,
-      role: confirmedUser.role,
-    };
-    return {
-      access_token: await this.jwtService.signAsync(payload),
-    };
+    const { access_token, refreshToken } =
+      await this.generateLoginTokens(confirmedUser);
+    setRtCookie(res, refreshToken);
+
+    return { access_token };
   }
 
   async resendVerificationToken(email: string) {
@@ -132,7 +133,7 @@ export class AuthService {
     return SuccessResponse;
   }
 
-  async loginUser(loginUser: LoginDto) {
+  async loginUser(loginUser: LoginDto, res: any) {
     const { email, password } = loginUser;
 
     const user = await this.userService.findOneByEmail(email);
@@ -144,11 +145,20 @@ export class AuthService {
     if (!checkStatus(user.status))
       throw new InternalServerErrorException('Something went wrong');
 
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    const { access_token, refreshToken } = await this.generateLoginTokens(user);
+    setRtCookie(res, refreshToken);
 
-    return {
-      access_token: await this.jwtService.signAsync(payload),
-    };
+    return { access_token };
+  }
+
+  async refreshToken(userId: string, refreshToken: string, res: any) {
+    const { access_token, refreshToken: newRt } = await this.rotateRefreshToken(
+      userId,
+      refreshToken,
+    );
+
+    setRtCookie(res, newRt);
+    return { access_token };
   }
 
   async changePassword(email: string, changePassDto: ChangePassDto) {
@@ -218,5 +228,63 @@ export class AuthService {
     });
 
     return SuccessResponse;
+  }
+
+  //--------------------------------- Private Methods ---------------------------------//
+
+  async rotateRefreshToken(userId: string, refreshToken: string) {
+    const user = await this.userService.findOneById(userId);
+
+    if (!user || !user.hashedRt) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    const valid = await validatePassword(refreshToken, user.hashedRt);
+    if (!valid) {
+      this.clearRefreshToken(userId);
+      throw new ForbiddenException('Invalid refresh token');
+    }
+
+    const tokens = await this.getTokens(user);
+    this.setRefreshToken(userId, tokens.refreshToken);
+    return tokens;
+  }
+
+  private async generateAccessToken(user: Partial<User>) {
+    const payload: PayloadType = { id: user.id, email: user.email };
+
+    return {
+      access_token: await this.jwtService.signAsync(payload),
+    };
+  }
+
+  private async clearRefreshToken(userId: string) {
+    await this.userService.findOneAndUpdate(userId, { hashedRt: null });
+  }
+
+  private async getTokens(user: Partial<User>) {
+    const payload: PayloadType = { id: user.id, email: user.email };
+
+    const [access_token, refreshToken] = await Promise.all([
+      this.jwtService.signAsync(payload),
+      this.jwtService.signAsync(payload, {
+        secret: process.env.JWT_REFRESH_SECRET,
+        expiresIn: process.env.JWT_REFRESH_TTL ?? '30d',
+      }),
+    ]);
+
+    return { access_token, refreshToken };
+  }
+
+  private async setRefreshToken(userId: string, rt: string) {
+    const hashedRt = await hashWithBcryptJS(rt);
+
+    await this.userService.findOneAndUpdate(userId, { hashedRt });
+  }
+
+  private async generateLoginTokens(user: User) {
+    const tokens = await this.getTokens(user);
+    await this.setRefreshToken(user.id, tokens.refreshToken);
+    return tokens;
   }
 }

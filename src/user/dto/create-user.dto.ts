@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   IsEmail,
   IsNotEmpty,
+  IsOptional,
   IsString,
   MaxLength,
   MinLength,
@@ -28,6 +29,13 @@ export class CreateUserDto {
   @MinLength(2)
   @MaxLength(100)
   email: string;
+
+  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(50)
+  phone: string;
 
   @ApiProperty()
   @IsNotEmpty()

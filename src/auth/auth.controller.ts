@@ -7,17 +7,20 @@ import {
   HttpStatus,
   HttpCode,
   Get,
+  Res,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { VerifyUserDto } from './dto/verify.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './gaurds/auth.gaurd';
+import { RefreshAuthGuard } from './gaurds/auth.gaurd';
 import { ChangePassDto } from './dto/change-pass.dto';
 import { ApiHeader, ApiTags } from '@nestjs/swagger';
 import { Roles } from './roles/roles.decorator';
 import { Role } from '../global/enums';
 import { RolesGuard } from './role/role.guard';
+import { setRtCookie } from '../global/cookies';
 
 //TODO: forgot and change password
 //TODO: limit
@@ -48,8 +51,9 @@ export class AuthController {
 
   @HttpCode(HttpStatus.OK)
   @Post('verify-email')
-  verifyUserEmail(@Body() verifyBody: VerifyUserDto) {
-    return this.authService.verifyUserEmail(verifyBody);
+  async verifyUserEmail(@Body() verifyBody: VerifyUserDto, @Res() res: any) {
+    const result = await this.authService.verifyUserEmail(verifyBody, res);
+    return res.json(result);
   }
 
   @HttpCode(HttpStatus.OK)
@@ -60,8 +64,21 @@ export class AuthController {
 
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  loginUser(@Body() loginDto: LoginDto) {
-    return this.authService.loginUser(loginDto);
+  async loginUser(@Body() loginDto: LoginDto, @Res() res: any) {
+    const result = await this.authService.loginUser(loginDto, res);
+    return res.json(result);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(RefreshAuthGuard)
+  @Post('refresh-token')
+  async refreshToken(@Request() req: any, @Res() res: any) {
+    const result = await this.authService.refreshToken(
+      req.user.id,
+      req.user.refreshToken,
+      res,
+    );
+    return res.json(result);
   }
 
   //* Endpoint to test successful access to a protected route
