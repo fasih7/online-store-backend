@@ -44,9 +44,14 @@ export type UniversalQueryParamsType = BaseQueryParamsType & {
 };
 
 export type UserFromToken = {
-  sub: string;
+  id: string;
   email: string;
   role: string;
   iat?: number;
   exp?: number;
-}; //payload: { sub: user._id, email: user.email, role: user.role }
+};
+
+export type PayloadType = {
+  id: string;
+  email: string;
+};

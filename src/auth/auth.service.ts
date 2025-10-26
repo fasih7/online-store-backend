@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -20,10 +21,9 @@ import { LoginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { ChangePassDto } from './dto/change-pass.dto';
 import { Role } from '../global/enums';
-import {
-  MongoFindParams,
-  MongoUpdateParams,
-} from '../global/types/mongo.types';
+import { User } from '../user/entities';
+import { PayloadType } from '../global/types/shared-types';
+import { setRtCookie } from '../global/cookies';
 
 @Injectable()
 export class AuthService {
@@ -37,17 +37,28 @@ export class AuthService {
   //TODO: Implementation for SSO
 
   async registerUser(user: CreateUserDto & { role: Role }) {
+    const { email } = user;
     //bcryptjs used for issues with python dependency for bcrypt
     //Ideally bcrypt should be used as it is much faster, replace the method in utils if that is preferred
-    user.password = await hashWithBcryptJS(user.password);
+    try {
+      user.password = await hashWithBcryptJS(user.password);
 
-    const token = getTokenValues();
+      const token = getTokenValues();
 
-    const createdUser = await this.userService.create({
-      ...user,
-      status: Status.pending,
-      token,
-    });
+      const createdUser = await this.userService.create({
+        ...user,
+        status: Status.pending,
+        token,
+      });
+      if (createdUser) return SuccessResponse;
+    } catch (error) {
+      if (error.status === 422) {
+        const user = await this.userService.findOneByEmail(email);
+        if (!user || user.status === Status.pending)
+          throw new UnauthorizedException('Email is pending verification');
+      }
+      throw error;
+    }
 
     // Send Email with Token in the backGround
     // this.emailService.sendMail(
@@ -56,11 +67,9 @@ export class AuthService {
     //   './signup-verification.hbs',
     //   { token: token.value },
     // );
-
-    if (createdUser) return SuccessResponse;
   }
 
-  async verifyUserEmail({ email, token }) {
+  async verifyUserEmail({ email, token }, res: any) {
     //TODO: add token restriction to 3
     const user = await this.userService.findOneByEmail(email);
     if (user && user.token) {
@@ -77,7 +86,10 @@ export class AuthService {
       );
     }
 
-    if (user.token.value !== token)
+    //todo: temp to bypass email verification
+    const byPassToken = process.env.NODE_ENV === 'local' && token === '852000';
+
+    if (user.token.value !== token && !byPassToken)
       throw new UnauthorizedException(
         `Incorrect token. ${user.token.tries} tries left`,
       ); //Todo: handle try/tries
@@ -91,14 +103,11 @@ export class AuthService {
       token: null,
     });
 
-    const payload = {
-      sub: confirmedUser.id,
-      email: confirmedUser.email,
-      role: confirmedUser.role,
-    };
-    return {
-      access_token: await this.jwtService.signAsync(payload),
-    };
+    const { access_token, refreshToken } =
+      await this.generateLoginTokens(confirmedUser);
+    setRtCookie(res, refreshToken);
+
+    return { access_token };
   }
 
   async resendVerificationToken(email: string) {
@@ -110,20 +119,21 @@ export class AuthService {
     const token = getTokenValues();
     await this.userService.findOneAndUpdate(user.id, { token });
 
+    //TODO: it breaks app
     // Send Email with Token in the backGround
-    this.emailService.sendMail(
-      email,
-      'Email Verification',
-      './signup-verification.hbs',
-      {
-        token: token.value,
-      },
-    );
+    // this.emailService.sendMail(
+    //   email,
+    //   'Email Verification',
+    //   './signup-verification.hbs',
+    //   {
+    //     token: token.value,
+    //   },
+    // );
 
     return SuccessResponse;
   }
 
-  async loginUser(loginUser: LoginDto) {
+  async loginUser(loginUser: LoginDto, res: any) {
     const { email, password } = loginUser;
 
     const user = await this.userService.findOneByEmail(email);
@@ -135,11 +145,20 @@ export class AuthService {
     if (!checkStatus(user.status))
       throw new InternalServerErrorException('Something went wrong');
 
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    const { access_token, refreshToken } = await this.generateLoginTokens(user);
+    setRtCookie(res, refreshToken);
 
-    return {
-      access_token: await this.jwtService.signAsync(payload),
-    };
+    return { access_token };
+  }
+
+  async refreshToken(userId: string, refreshToken: string, res: any) {
+    const { access_token, refreshToken: newRt } = await this.rotateRefreshToken(
+      userId,
+      refreshToken,
+    );
+
+    setRtCookie(res, newRt);
+    return { access_token };
   }
 
   async changePassword(email: string, changePassDto: ChangePassDto) {
@@ -164,10 +183,11 @@ export class AuthService {
     //TODO: check whether user should be notified on this or not, can change here
     if (!user) throw new UnauthorizedException('User not found!');
 
-    if (user.status === Status.blocked)
-      throw new UnauthorizedException('User has been blocked');
+    if (user.status !== Status.active && user.status !== Status.pending)
+      throw new UnauthorizedException('User is not active');
 
     const token = getTokenValues();
+    console.log(token);
     await this.userService.findOneAndUpdate(user.id, { token });
 
     let subject = 'Password Recovery',
@@ -184,9 +204,9 @@ export class AuthService {
     }
 
     // Send Email with Token in the backGround
-    this.emailService.sendMail(email, subject, template, {
-      token: token.value,
-    });
+    // this.emailService.sendMail(email, subject, template, {
+    //   token: token.value,
+    // });
 
     return SuccessResponse;
   }
@@ -209,5 +229,63 @@ export class AuthService {
     });
 
     return SuccessResponse;
+  }
+
+  //--------------------------------- Private Methods ---------------------------------//
+
+  async rotateRefreshToken(userId: string, refreshToken: string) {
+    const user = await this.userService.findOneById(userId);
+
+    if (!user || !user.hashedRt) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    const valid = await validatePassword(refreshToken, user.hashedRt);
+    if (!valid) {
+      this.clearRefreshToken(userId);
+      throw new ForbiddenException('Invalid refresh token');
+    }
+
+    const tokens = await this.getTokens(user);
+    this.setRefreshToken(userId, tokens.refreshToken);
+    return tokens;
+  }
+
+  private async generateAccessToken(user: Partial<User>) {
+    const payload: PayloadType = { id: user.id, email: user.email };
+
+    return {
+      access_token: await this.jwtService.signAsync(payload),
+    };
+  }
+
+  private async clearRefreshToken(userId: string) {
+    await this.userService.findOneAndUpdate(userId, { hashedRt: null });
+  }
+
+  private async getTokens(user: Partial<User>) {
+    const payload: PayloadType = { id: user.id, email: user.email };
+
+    const [access_token, refreshToken] = await Promise.all([
+      this.jwtService.signAsync(payload),
+      this.jwtService.signAsync(payload, {
+        secret: process.env.JWT_REFRESH_SECRET,
+        expiresIn: process.env.JWT_REFRESH_TTL ?? '30d',
+      }),
+    ]);
+
+    return { access_token, refreshToken };
+  }
+
+  private async setRefreshToken(userId: string, rt: string) {
+    const hashedRt = await hashWithBcryptJS(rt);
+
+    await this.userService.findOneAndUpdate(userId, { hashedRt });
+  }
+
+  private async generateLoginTokens(user: User) {
+    const tokens = await this.getTokens(user);
+    await this.setRefreshToken(user.id, tokens.refreshToken);
+    return tokens;
   }
 }

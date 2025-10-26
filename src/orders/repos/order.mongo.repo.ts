@@ -29,7 +29,6 @@ export class OrderRepo extends IMongoRepoBase {
   private flattenResponse(values: any[], fieldName: string) {
     return values.map((value) => {
       const flatValue = value[fieldName];
-      console.log('flatValue: ', flatValue);
       value[fieldName] = undefined;
 
       return {

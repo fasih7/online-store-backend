@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Order, OrderStatus } from '../entities/order.entity';
 import { OrderItem } from '../entities/order-item.entity';
 import { IPostgresRepoBase } from '../../global/repo/postgres-repo-impl';
+import { User } from '../../user/entities/user.entity';
 
 @Injectable()
 export class OrderPostgresRepo extends IPostgresRepoBase<Order> {
@@ -47,8 +48,16 @@ export class OrderPostgresRepo extends IPostgresRepoBase<Order> {
     });
   }
 
-  async findOrderWithItems(orderId: string): Promise<Order | null> {
-    return await this.findOneById(orderId, ['items', 'items.product', 'user']);
+  async findOrderWithItems(orderId: string, userId?: string): Promise<Order> {
+    const relations = ['items', 'items.product'];
+    const order = await this.findOne({
+      where: { id: orderId, userId },
+      relations,
+    });
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+    return order;
   }
 
   async findByUser(

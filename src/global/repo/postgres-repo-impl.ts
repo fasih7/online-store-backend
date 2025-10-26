@@ -21,7 +21,7 @@ export class IPostgresRepoBase<T = any> extends PostgresBaseDataAccess<T> {
   async createQueryAndFindMany(
     findQueryParams?: FindQueryParamsType,
     getPagination = true,
-  ): Promise<PostgresPaginatedResponse<T> | T[]> {
+  ): Promise<T[]> {
     let { pageNumber = 1, limit = 10 } =
       findQueryParams?.options?.pagination || {};
 
@@ -55,23 +55,7 @@ export class IPostgresRepoBase<T = any> extends PostgresBaseDataAccess<T> {
       options: queryOptions,
     };
 
-    const responsePromise = this.findMany(postgresParams);
-
-    if (!getPagination) {
-      return await responsePromise;
-    }
-
-    // Get count for pagination
-    const countPromise = this.getCount(findQueryParams?.query);
-
-    const [result, count] = await Promise.all([responsePromise, countPromise]);
-
-    const pagination = getPostgresPaginationObject(pageNumber, limit, count);
-
-    return {
-      pagination,
-      data: result,
-    };
+    return await this.findMany(postgresParams);
   }
 
   /**

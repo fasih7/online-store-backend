@@ -74,7 +74,6 @@ export class MongoBaseDataAccess {
     populate?: { isPopulate: boolean; field: string },
   ): Promise<Query<any[], any, {}, any, 'find'>> {
     const { query = {}, selections = [], options = {} } = findQueryParams || {};
-    console.log('findMany options: ', findQueryParams);
 
     return this.model.find(query, selections, options);
   }

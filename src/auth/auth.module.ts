@@ -6,6 +6,8 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { RefreshTokenStrategy } from './strategies/jwt-refresh.strategy';
+import { AdminAuthGuard } from './gaurds/auth.gaurd';
 
 @Module({
   imports: [
@@ -20,6 +22,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     PassportModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, RefreshTokenStrategy, AdminAuthGuard],
+  exports: [AdminAuthGuard],
 })
 export class AuthModule {}

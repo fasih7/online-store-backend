@@ -19,6 +19,8 @@ import { Product } from './entities/product.entity';
 import { FeaturedProduct } from './entities/featured-product.entity';
 import { ProductPostgresRepo } from './repo/product.postgres.repo';
 import { FeaturedProductPostgresRepo } from './repo/featuredProduct.postgres.repo';
+import { FileUploadService } from './services/file-upload.service';
+import { UserModule } from '../user/user.module';
 
 @Module({
   imports: [
@@ -27,6 +29,7 @@ import { FeaturedProductPostgresRepo } from './repo/featuredProduct.postgres.rep
     //   { name: MongoFeaturedProduct.name, schema: FeaturedProductSchema },
     // ]),
     TypeOrmModule.forFeature([Product, FeaturedProduct]),
+    UserModule,
   ],
   controllers: [ProductsController, FeaturedProductsController],
   providers: [
@@ -36,6 +39,7 @@ import { FeaturedProductPostgresRepo } from './repo/featuredProduct.postgres.rep
     /* FeaturedProductRepo, */
     ProductPostgresRepo,
     FeaturedProductPostgresRepo,
+    FileUploadService,
   ],
 })
 export class ProductsModule {}

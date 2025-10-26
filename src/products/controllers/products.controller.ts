@@ -9,10 +9,17 @@ import {
   Put,
   UseGuards,
   Query,
+  UseInterceptors,
+  UploadedFiles,
 } from '@nestjs/common';
+import {
+  FilesInterceptor,
+  FileFieldsInterceptor,
+} from '@nestjs/platform-express';
 import { ProductsService } from '../services/products.service';
 import { CreateProductDto } from '../dto/create-product.dto';
-import { JwtAuthGuard } from '../../auth/gaurds/auth.gaurd';
+import { UpdateProductDto } from '../dto/update-product.dto';
+import { AdminAuthGuard } from '../../auth/gaurds/auth.gaurd';
 import { RolesGuard } from '../../auth/role/role.guard';
 import { Role } from '../../global/enums';
 import { Roles } from '../../auth/roles/roles.decorator';
@@ -25,18 +32,33 @@ import { ApiTags } from '@nestjs/swagger';
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles(Role.admin)
+  @UseGuards(AdminAuthGuard)
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'primaryImage', maxCount: 1 },
+      { name: 'images', maxCount: 10 },
+    ]),
+  )
   @Post('')
   async createProduct(
     @Body() createProductDto: CreateProductDto,
+    @UploadedFiles()
+    files: {
+      primaryImage?: Express.Multer.File[];
+      images?: Express.Multer.File[];
+    },
     @Request() req,
   ) {
-    return await this.productsService.createProduct(createProductDto, req.user);
+    return await this.productsService.createProduct(
+      createProductDto,
+      req.user,
+      files,
+    );
   }
 
   @Get('')
   async getProducts(@Query() productQuery: GetManyProductsQuery) {
+    productQuery.sortOrder = productQuery.sortOrder === '-1' ? 'DESC' : 'ASC'; // TODO: This should be handled in the service or repository layer
     return await this.productsService.getProducts(productQuery);
   }
 
@@ -46,7 +68,7 @@ export class ProductsController {
       pageNumber: 1,
       limit: 4,
       sortBy: 'createdAt',
-      sortOrder: '-1',
+      sortOrder: 'DESC',
     };
     return await this.productsService.getProducts(queryParams, false);
   }
@@ -61,13 +83,33 @@ export class ProductsController {
     return await this.productsService.searchProducts(searchQuery);
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.admin)
+  @UseGuards(AdminAuthGuard)
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'primaryImage', maxCount: 1 },
+      { name: 'images', maxCount: 10 },
+    ]),
+  )
   @Put('/:id')
-  async updateProductById(@Param('id') id: string) {}
+  async updateProductById(
+    @Param('id') id: string,
+    @Body() updateProductDto: UpdateProductDto,
+    @UploadedFiles()
+    files: {
+      primaryImage?: Express.Multer.File[];
+      images?: Express.Multer.File[];
+    },
+  ) {
+    return await this.productsService.updateProduct(
+      id,
+      updateProductDto,
+      files,
+    );
+  }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.admin)
+  @UseGuards(AdminAuthGuard)
   @Delete('/:id')
-  async deleteProductById(@Param('id') id: string) {}
+  async deleteProductById(@Param('id') id: string) {
+    return await this.productsService.deleteProduct(id);
+  }
 }

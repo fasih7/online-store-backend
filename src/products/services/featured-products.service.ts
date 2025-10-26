@@ -23,9 +23,6 @@ export class FeaturedProductsService {
       );
     }
 
-    console.log({ toRemoveIds });
-    console.log('currentFeaturedProducts before: ', currentFeaturedProducts);
-
     // Remove products from featured collection
     if (toRemoveIds?.length) {
       await this.featuredProductRepo.removeProducts(
@@ -38,8 +35,6 @@ export class FeaturedProductsService {
     currentFeaturedProducts = await this.featuredProductRepo.findWithProducts(
       currentFeaturedProducts.id,
     );
-
-    console.log('currentFeaturedProducts after: ', currentFeaturedProducts);
 
     // Ensure we can add the new products without exceeding the limit
     const availableSlots = 4 - currentFeaturedProducts.products.length;
