@@ -183,10 +183,11 @@ export class AuthService {
     //TODO: check whether user should be notified on this or not, can change here
     if (!user) throw new UnauthorizedException('User not found!');
 
-    if (user.status === Status.blocked)
-      throw new UnauthorizedException('User has been blocked');
+    if (user.status !== Status.active && user.status !== Status.pending)
+      throw new UnauthorizedException('User is not active');
 
     const token = getTokenValues();
+    console.log(token);
     await this.userService.findOneAndUpdate(user.id, { token });
 
     let subject = 'Password Recovery',
@@ -203,9 +204,9 @@ export class AuthService {
     }
 
     // Send Email with Token in the backGround
-    this.emailService.sendMail(email, subject, template, {
-      token: token.value,
-    });
+    // this.emailService.sendMail(email, subject, template, {
+    //   token: token.value,
+    // });
 
     return SuccessResponse;
   }

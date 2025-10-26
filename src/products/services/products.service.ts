@@ -11,6 +11,9 @@ import { SuccessResponse } from '../../global/consts';
 import { GetManyProductsQuery } from '../dto/get-many-products-query.dto';
 import { SearchProductsDto } from '../dto/search-products.dto';
 import { FileUploadService } from './file-upload.service';
+import { Product } from '../entities';
+import { PostgresPaginatedResponse } from '../../global/types/postgres.types';
+import { getPostgresPaginationObject } from '../../global/helpers/methods';
 
 @Injectable()
 export class ProductsService {
@@ -67,7 +70,7 @@ export class ProductsService {
   async getProducts(
     productQuery: GetManyProductsQuery,
     getPagination?: boolean,
-  ) {
+  ): Promise<PostgresPaginatedResponse<Product>> {
     const { category: commaSeparedCategories, ...restQuery } = productQuery;
 
     // Logic for category if category is not provided should not pass then
@@ -77,16 +80,34 @@ export class ProductsService {
         categoryIds[0] !== '' && { categoryId: categoryIds }), // PostgreSQL uses IN for array matching
     };
 
-    let { pageNumber = 1, limit = 12 } = restQuery;
-    pageNumber = +pageNumber;
-    limit = +limit;
-    return await this.productRepo.createQueryAndFindMany(
-      {
+    let { pageNumber = 1, limit = 12, searchQuery } = restQuery;
+
+    let productsResult: Product[] = [];
+
+    if (searchQuery) {
+      productsResult = await this.productRepo.searchProductsV2(searchQuery, {
+        pageNumber,
+        limit,
+        categoryIds,
+        ...restQuery,
+      });
+    } else {
+      productsResult = await this.productRepo.createQueryAndFindMany({
         query,
         options: { pagination: { pageNumber, limit }, ...restQuery },
-      },
-      getPagination,
+      });
+    }
+
+    pageNumber = +pageNumber;
+    limit = +limit;
+
+    const pagination = getPostgresPaginationObject(
+      pageNumber,
+      limit,
+      productsResult.length,
     );
+
+    return { pagination, data: productsResult };
   }
 
   async getProductById(id: string) {
@@ -177,17 +198,18 @@ export class ProductsService {
     return SuccessResponse;
   }
 
-  async searchProducts(searchQuery: SearchProductsDto) {
-    const { searchTerm, category, ...restQuery } = searchQuery;
+  async searchProducts(searchQueryDto: SearchProductsDto) {
+    const { searchQuery } = searchQueryDto;
 
     // Parse category IDs if provided
-    const categoryIds = category?.split(',').filter((id) => id.trim() !== '');
+    // const categoryIds = category?.split(',').filter((id) => id.trim() !== '');
 
     const searchOptions = {
-      ...restQuery,
-      categoryIds,
+      limit: 8,
+      // ...restQuery,
+      // categoryIds,
     };
 
-    return await this.productRepo.searchProductsV2(searchTerm, searchOptions);
+    return await this.productRepo.searchProductsV2(searchQuery, searchOptions);
   }
 }

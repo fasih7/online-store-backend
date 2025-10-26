@@ -23,7 +23,16 @@ async function bootstrap() {
     }),
   );
   app.use(cookieParser());
-  app.enableCors();
+  app.enableCors({
+    origin:
+      process.env.NODE_ENV === 'production'
+        ? process.env.ALLOWED_ORIGINS?.split(',') || []
+        : ['http://localhost:3000'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+    exposedHeaders: ['Set-Cookie'],
+  });
 
   // Serve static files from uploads directory
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {

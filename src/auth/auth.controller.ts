@@ -16,6 +16,8 @@ import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './gaurds/auth.gaurd';
 import { RefreshAuthGuard } from './gaurds/auth.gaurd';
 import { ChangePassDto } from './dto/change-pass.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 import { ApiHeader, ApiTags } from '@nestjs/swagger';
 import { Roles } from './roles/roles.decorator';
 import { Role } from '../global/enums';
@@ -96,6 +98,18 @@ export class AuthController {
   changePassword(@Body() changePassDto: ChangePassDto, @Request() req) {
     const email = req.user.email;
     return this.authService.changePassword(email, changePassDto);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('forgot-password')
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    return this.authService.forgottenPasswordVerification(forgotPasswordDto);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('update-password')
+  async updatePassword(@Body() updatePasswordDto: UpdatePasswordDto) {
+    return this.authService.updatePassword(updatePasswordDto);
   }
 
   //TODO: not working for swagger

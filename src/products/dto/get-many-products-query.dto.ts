@@ -39,4 +39,9 @@ export class GetManyProductsQuery {
   @IsOptional()
   @IsString()
   category?: string;
+
+  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  searchQuery?: string;
 }

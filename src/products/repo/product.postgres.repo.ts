@@ -56,7 +56,7 @@ export class ProductPostgresRepo extends IPostgresRepoBase<Product> {
 
   // Search products Version 2 by title or description with pagination and filtering
   async searchProductsV2(
-    searchTerm: string,
+    searchQuery: string,
     options?: {
       pageNumber?: number;
       limit?: number;
@@ -64,12 +64,7 @@ export class ProductPostgresRepo extends IPostgresRepoBase<Product> {
       sortOrder?: string;
       categoryIds?: string[];
     },
-  ): Promise<{
-    products: Product[];
-    total: number;
-    pageNumber: number;
-    limit: number;
-  }> {
+  ): Promise<Product[]> {
     const {
       pageNumber = 1,
       limit = 12,
@@ -82,8 +77,8 @@ export class ProductPostgresRepo extends IPostgresRepoBase<Product> {
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.category', 'category')
       .where(
-        '(product.title ILIKE :searchTerm OR product.description ILIKE :searchTerm)',
-        { searchTerm: `%${searchTerm}%` },
+        '(product.title ILIKE :searchQuery OR product.description ILIKE :searchQuery)',
+        { searchQuery: `%${searchQuery}%` },
       );
 
     // Add category filter if provided
@@ -102,30 +97,25 @@ export class ProductPostgresRepo extends IPostgresRepoBase<Product> {
     queryBuilder.skip(offset).take(limit);
 
     // Get total count for pagination
-    const totalQueryBuilder = this.repository
-      .createQueryBuilder('product')
-      .where(
-        '(product.title ILIKE :searchTerm OR product.description ILIKE :searchTerm)',
-        { searchTerm: `%${searchTerm}%` },
-      );
+    // const totalQueryBuilder = this.repository
+    //   .createQueryBuilder('product')
+    //   .where(
+    //     '(product.title ILIKE :searchTerm OR product.description ILIKE :searchTerm)',
+    //     { searchTerm: `%${searchTerm}%` },
+    //   );
 
-    if (categoryIds && categoryIds.length > 0) {
-      totalQueryBuilder.andWhere('product.categoryId IN (:...categoryIds)', {
-        categoryIds,
-      });
-    }
+    // if (categoryIds && categoryIds.length > 0) {
+    //   totalQueryBuilder.andWhere('product.categoryId IN (:...categoryIds)', {
+    //     categoryIds,
+    //   });
+    // }
 
-    const [products, total] = await Promise.all([
+    const [products /*total*/] = await Promise.all([
       queryBuilder.getMany(),
-      totalQueryBuilder.getCount(),
+      // totalQueryBuilder.getCount(),
     ]);
 
-    return {
-      products,
-      total,
-      pageNumber,
-      limit,
-    };
+    return products;
   }
   /**
    * Find products by price range

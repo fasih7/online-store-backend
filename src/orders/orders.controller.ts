@@ -44,9 +44,11 @@ export class OrdersController {
     return this.ordersService.getOrdersForUser(userId, query);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.ordersService.findOne(id);
+  findOne(@Param('id') id: string, @Req() req: any) {
+    const userId = req.user.id;
+    return this.ordersService.findOne(id, userId);
   }
 
   @Patch(':id')

@@ -58,6 +58,7 @@ export class ProductsController {
 
   @Get('')
   async getProducts(@Query() productQuery: GetManyProductsQuery) {
+    productQuery.sortOrder = productQuery.sortOrder === '-1' ? 'DESC' : 'ASC'; // TODO: This should be handled in the service or repository layer
     return await this.productsService.getProducts(productQuery);
   }
 
@@ -67,7 +68,7 @@ export class ProductsController {
       pageNumber: 1,
       limit: 4,
       sortBy: 'createdAt',
-      sortOrder: '-1',
+      sortOrder: 'DESC',
     };
     return await this.productsService.getProducts(queryParams, false);
   }

@@ -28,8 +28,8 @@ export class User {
   @Index()
   email: string;
 
-  @Column({ type: 'varchar', length: 255 })
-  password: string;
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  password: string | null;
 
   @Column({ type: 'varchar', length: 20, nullable: true })
   phone: string;

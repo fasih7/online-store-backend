@@ -43,10 +43,10 @@ export class OrdersService {
         user = await this.userService.create(createUserParams);
       }
 
-      if (
-        createOrderDto.token !==
-        (await this.redis.get(getTokenName(user.email)))
-      )
+      //TODO: Remove this after testing phases
+      const redisToken = await this.redis.get(getTokenName(user.email));
+      const token = process.env.NODE_ENV === 'local' ? '852000' : redisToken;
+      if (createOrderDto.token !== token)
         throw new UnauthorizedException('Incorrect/Expired token');
 
       userId = user.id;
@@ -88,8 +88,9 @@ export class OrdersService {
     return `This action returns all orders`;
   }
 
-  async findOne(id: string) {
-    return await this.orderRepo.findOrderWithItems(id);
+  async findOne(id: string, userId: string) {
+    const order = await this.orderRepo.findOrderWithItems(id, userId);
+    return order;
   }
 
   async getOrdersForUser(userId: string, query: GetUserOrdersDto) {
