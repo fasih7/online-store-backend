@@ -1,12 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  ArrayMaxSize,
-  ArrayMinSize,
-  IsArray,
-  IsMongoId,
   IsNotEmpty,
   IsNumber,
-  IsOptional,
   IsString,
   Max,
   MaxLength,
@@ -46,18 +41,5 @@ export class CreateProductDto {
   @IsNotEmpty()
   @IsString()
   @MinLength(1)
-  @MaxLength(500)
-  primaryImage: string;
-
-  @ApiProperty()
-  @IsNotEmpty()
-  @IsMongoId()
   category: string;
-
-  @ApiProperty()
-  @IsArray()
-  @ArrayMinSize(1)
-  @ArrayMaxSize(10)
-  @IsOptional()
-  images: string[];
 }
