@@ -63,6 +63,7 @@ export class ProductPostgresRepo extends IPostgresRepoBase<Product> {
       sortBy?: string;
       sortOrder?: string;
       categoryIds?: string[];
+      relations?: string[];
     },
   ): Promise<Product[]> {
     const {
@@ -71,15 +72,30 @@ export class ProductPostgresRepo extends IPostgresRepoBase<Product> {
       sortBy = 'title',
       sortOrder = 'ASC',
       categoryIds,
+      relations = [],
     } = options || {};
 
     const queryBuilder = this.repository
       .createQueryBuilder('product')
-      .leftJoinAndSelect('product.category', 'category')
       .where(
         '(product.title ILIKE :searchQuery OR product.description ILIKE :searchQuery)',
         { searchQuery: `%${searchQuery}%` },
       );
+
+    // Conditionally join relations
+    const requestedRelations = Array.isArray(relations) ? relations : [];
+
+    if (requestedRelations.includes('category')) {
+      queryBuilder.leftJoinAndSelect('product.category', 'category');
+    }
+
+    if (requestedRelations.includes('user')) {
+      queryBuilder.leftJoinAndSelect('product.user', 'user');
+    }
+
+    if (requestedRelations.includes('orderItems')) {
+      queryBuilder.leftJoinAndSelect('product.orderItems', 'orderItems');
+    }
 
     // Add category filter if provided
     if (categoryIds && categoryIds.length > 0) {

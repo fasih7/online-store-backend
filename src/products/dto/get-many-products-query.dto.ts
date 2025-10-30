@@ -44,4 +44,9 @@ export class GetManyProductsQuery {
   @IsOptional()
   @IsString()
   searchQuery?: string;
+
+  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  relations?: string; // comma separated relations like 'category,user'
 }

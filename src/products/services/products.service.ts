@@ -71,7 +71,11 @@ export class ProductsService {
     productQuery: GetManyProductsQuery,
     getPagination?: boolean,
   ): Promise<PostgresPaginatedResponse<Product>> {
-    const { category: commaSeparedCategories, ...restQuery } = productQuery;
+    const {
+      category: commaSeparedCategories,
+      relations,
+      ...restQuery
+    } = productQuery as any;
 
     // Logic for category if category is not provided should not pass then
     const categoryIds = commaSeparedCategories?.split(',');
@@ -80,7 +84,15 @@ export class ProductsService {
         categoryIds[0] !== '' && { categoryId: categoryIds }), // PostgreSQL uses IN for array matching
     };
 
-    let { pageNumber = 1, limit = 12, searchQuery } = restQuery;
+    // Parse relations (comma-separated string to array)
+    const parsedRelations: string[] = relations
+      ? relations
+          .split(',')
+          .map((r: string) => r.trim())
+          .filter(Boolean)
+      : [];
+
+    let { pageNumber = 1, limit = 12, searchQuery } = restQuery as any;
 
     let productsResult: Product[] = [];
 
@@ -89,12 +101,17 @@ export class ProductsService {
         pageNumber,
         limit,
         categoryIds,
-        ...restQuery,
+        relations: parsedRelations,
+        ...(restQuery as any),
       });
     } else {
       productsResult = await this.productRepo.createQueryAndFindMany({
         query,
-        options: { pagination: { pageNumber, limit }, ...restQuery },
+        options: {
+          pagination: { pageNumber, limit },
+          relations: parsedRelations,
+          ...(restQuery as any),
+        },
       });
     }
 
