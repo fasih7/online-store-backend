@@ -1,20 +1,23 @@
-import { Type } from 'class-transformer';
-import { IsOptional, IsInt, Min, IsBoolean } from 'class-validator';
+import {
+  IsOptional,
+  IsBoolean,
+  IsEnum,
+} from 'class-validator';
+import { BasePaginationQueryDto } from 'src/global/dto/base-pagination-query.dto';
 
-export class GetUserOrdersDto {
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page = 1;
+export enum OrderVariant {
+  MINIMAL = 'minimal',
+  COMPLETE = 'complete',
+}
 
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  limit = 10;
-
+export class GetUserOrdersDto extends BasePaginationQueryDto {
   @IsOptional()
   @IsBoolean()
   getOrderItems = false;
+}
+
+export class GetAllOrdersDto extends BasePaginationQueryDto {
+  @IsOptional()
+  @IsEnum(OrderVariant)
+  variant: OrderVariant = OrderVariant.COMPLETE;
 }

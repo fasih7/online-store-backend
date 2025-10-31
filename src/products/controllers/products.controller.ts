@@ -58,14 +58,19 @@ export class ProductsController {
 
   @Get('')
   async getProducts(@Query() productQuery: GetManyProductsQuery) {
-    productQuery.sortOrder = productQuery.sortOrder === '-1' ? 'DESC' : 'ASC'; // TODO: This should be handled in the service or repository layer
+    // Normalize sortOrder: Transform -1 to DESC, default to ASC
+    if (productQuery.sortOrder === '-1') {
+      productQuery.sortOrder = 'DESC';
+    } else if (!productQuery.sortOrder) {
+      productQuery.sortOrder = 'ASC';
+    }
     return await this.productsService.getProducts(productQuery);
   }
 
   @Get('recently-added')
   async getRecentlyAddedProducts() {
-    const queryParams = {
-      pageNumber: 1,
+    const queryParams: GetManyProductsQuery = {
+      page: 1,
       limit: 4,
       sortBy: 'createdAt',
       sortOrder: 'DESC',

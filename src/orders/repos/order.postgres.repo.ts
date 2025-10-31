@@ -5,6 +5,7 @@ import { Order, OrderStatus } from '../entities/order.entity';
 import { OrderItem } from '../entities/order-item.entity';
 import { IPostgresRepoBase } from '../../global/repo/postgres-repo-impl';
 import { User } from '../../user/entities/user.entity';
+import { OrderVariant } from '../dto/orders.dtos';
 
 @Injectable()
 export class OrderPostgresRepo extends IPostgresRepoBase<Order> {
@@ -50,8 +51,12 @@ export class OrderPostgresRepo extends IPostgresRepoBase<Order> {
 
   async findOrderWithItems(orderId: string, userId?: string): Promise<Order> {
     const relations = ['items', 'items.product'];
+    const where: any = { id: orderId };
+    if (userId) {
+      where.userId = userId;
+    }
     const order = await this.findOne({
-      where: { id: orderId, userId },
+      where,
       relations,
     });
     if (!order) {
@@ -76,6 +81,48 @@ export class OrderPostgresRepo extends IPostgresRepoBase<Order> {
     });
 
     return { data, total };
+  }
+
+  async findAllWithPagination(
+    page = 1,
+    limit = 10,
+    variant: OrderVariant = OrderVariant.COMPLETE,
+  ): Promise<{ data: Order[] | any[]; total: number }> {
+    if (variant === OrderVariant.MINIMAL) {
+      // Use QueryBuilder for minimal variant to select specific fields and compute name
+      const queryBuilder = this.orderRepository
+        .createQueryBuilder('order')
+        .select('order.id', 'id')
+        .addSelect("CONCAT(order.firstName, ' ', order.lastName)", 'name')
+        .addSelect('order.email', 'email')
+        .addSelect('order.phone', 'phone')
+        .addSelect('order.status', 'status')
+        .addSelect('order.totalPrice', 'totalPrice')
+        .orderBy('order.createdAt', 'DESC')
+        .skip((page - 1) * limit)
+        .take(limit);
+
+      // Create separate query for count
+      const countQueryBuilder =
+        this.orderRepository.createQueryBuilder('order');
+
+      const [data, total] = await Promise.all([
+        queryBuilder.getRawMany(),
+        countQueryBuilder.getCount(),
+      ]);
+
+      return { data, total };
+    } else {
+      // Complete variant - return all fields with relations
+      const [data, total] = await this.orderRepository.findAndCount({
+        relations: ['items', 'items.product'],
+        order: { createdAt: 'DESC' },
+        skip: (page - 1) * limit,
+        take: limit,
+      });
+
+      return { data, total };
+    }
   }
 
   async findByStatus(status: OrderStatus): Promise<Order[]> {

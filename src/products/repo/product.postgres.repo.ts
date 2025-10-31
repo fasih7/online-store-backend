@@ -65,7 +65,7 @@ export class ProductPostgresRepo extends IPostgresRepoBase<Product> {
       categoryIds?: string[];
       relations?: string[];
     },
-  ): Promise<Product[]> {
+  ): Promise<{ data: Product[]; total: number }> {
     const {
       pageNumber = 1,
       limit = 12,
@@ -113,25 +113,25 @@ export class ProductPostgresRepo extends IPostgresRepoBase<Product> {
     queryBuilder.skip(offset).take(limit);
 
     // Get total count for pagination
-    // const totalQueryBuilder = this.repository
-    //   .createQueryBuilder('product')
-    //   .where(
-    //     '(product.title ILIKE :searchTerm OR product.description ILIKE :searchTerm)',
-    //     { searchTerm: `%${searchTerm}%` },
-    //   );
+    const totalQueryBuilder = this.repository
+      .createQueryBuilder('product')
+      .where(
+        '(product.title ILIKE :searchQuery OR product.description ILIKE :searchQuery)',
+        { searchQuery: `%${searchQuery}%` },
+      );
 
-    // if (categoryIds && categoryIds.length > 0) {
-    //   totalQueryBuilder.andWhere('product.categoryId IN (:...categoryIds)', {
-    //     categoryIds,
-    //   });
-    // }
+    if (categoryIds && categoryIds.length > 0) {
+      totalQueryBuilder.andWhere('product.categoryId IN (:...categoryIds)', {
+        categoryIds,
+      });
+    }
 
-    const [products /*total*/] = await Promise.all([
+    const [products, total] = await Promise.all([
       queryBuilder.getMany(),
-      // totalQueryBuilder.getCount(),
+      totalQueryBuilder.getCount(),
     ]);
 
-    return products;
+    return { data: products, total };
   }
   /**
    * Find products by price range

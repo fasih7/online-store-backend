@@ -2,6 +2,7 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -17,7 +18,11 @@ import { UserFromToken } from 'src/global/types/shared-types';
 import { VerifyEmailDTO } from './dto/verify-email.dto';
 import { getTokenValues } from '../auth/utils/helper-methods';
 import { InjectRedis, type Redis } from '@nestjs-redis/client';
-import { GetUserOrdersDto } from './dto/orders.dtos';
+import { GetUserOrdersDto, GetAllOrdersDto } from './dto/orders.dtos';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { OrderStatus, Order } from './entities/order.entity';
+import { PostgresPaginatedResponse } from 'src/global/types/postgres.types';
+import { getPostgresPaginationObject } from 'src/global/helpers/methods';
 
 @Injectable()
 export class OrdersService {
@@ -84,38 +89,81 @@ export class OrdersService {
     // return SuccessResponse;
   }
 
-  findAll() {
-    return `This action returns all orders`;
-  }
+  async getAllOrders(query: GetAllOrdersDto): Promise<PostgresPaginatedResponse<Order>> {
+    const { page = 1, limit = 10, variant } = query;
+    // Ensure limit doesn't exceed 100
+    const safeLimit = Math.min(limit, 100);
+    const safePage = Math.max(page, 1);
 
-  async findOne(id: string, userId: string) {
-    const order = await this.orderRepo.findOrderWithItems(id, userId);
-    return order;
-  }
+    const { data, total } = await this.orderRepo.findAllWithPagination(
+      safePage,
+      safeLimit,
+      variant,
+    );
 
-  async getOrdersForUser(userId: string, query: GetUserOrdersDto) {
-    const { page, limit, getOrderItems } = query;
-
-    const { data, total } = await this.orderRepo.findByUser(
-      userId,
-      page,
-      limit,
-      getOrderItems,
+    const pagination = getPostgresPaginationObject(
+      safePage,
+      safeLimit,
+      total,
     );
 
     return {
       data,
+      pagination,
+    };
+  }
+
+  async findOne(id: string, userId?: string) {
+    const order = await this.orderRepo.findOrderWithItems(id, userId);
+    return order;
+  }
+
+  async getOrdersForUser(
+    userId: string,
+    query: GetUserOrdersDto,
+  ): Promise<PostgresPaginatedResponse<Order>> {
+    const { page = 1, limit = 10, getOrderItems } = query;
+
+    const safePage = Math.max(page, 1);
+    const safeLimit = Math.min(limit, 100);
+
+    const { data, total } = await this.orderRepo.findByUser(
+      userId,
+      safePage,
+      safeLimit,
+      getOrderItems,
+    );
+
+    const pagination = getPostgresPaginationObject(
+      safePage,
+      safeLimit,
       total,
-      pagination: {
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+    );
+
+    return {
+      data,
+      pagination,
     };
   }
 
   update(id: number, updateOrderDto: UpdateOrderDto) {
     return `This action updates a #${id} order`;
+  }
+
+  async updateOrderStatus(
+    orderId: string,
+    updateOrderStatusDto: UpdateOrderStatusDto,
+  ) {
+    const updatedOrder = await this.orderRepo.updateStatus(
+      orderId,
+      updateOrderStatusDto.status,
+    );
+
+    if (updatedOrder) {
+      return SuccessResponse;
+    }
+
+    throw new NotFoundException('Failed to update order status');
   }
 
   remove(id: number) {

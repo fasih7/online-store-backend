@@ -92,36 +92,44 @@ export class ProductsService {
           .filter(Boolean)
       : [];
 
-    let { pageNumber = 1, limit = 12, searchQuery } = restQuery as any;
+    let { page = 1, limit = 12, searchQuery, sortBy, sortOrder } = restQuery as any;
 
     let productsResult: Product[] = [];
+    let total: number;
 
     if (searchQuery) {
-      productsResult = await this.productRepo.searchProductsV2(searchQuery, {
-        pageNumber,
+      const { data, total: searchTotal } = await this.productRepo.searchProductsV2(searchQuery, {
+        pageNumber: page,
         limit,
         categoryIds,
         relations: parsedRelations,
-        ...(restQuery as any),
+        sortBy,
+        sortOrder,
       });
+      productsResult = data;
+      total = searchTotal;
     } else {
       productsResult = await this.productRepo.createQueryAndFindMany({
         query,
         options: {
-          pagination: { pageNumber, limit },
+          pagination: { pageNumber: page, limit },
           relations: parsedRelations,
-          ...(restQuery as any),
+          sortBy,
+          sortOrder,
         },
       });
+      
+      // Get total count
+      total = await this.productRepo.getCount(query);
     }
 
-    pageNumber = +pageNumber;
+    page = +page;
     limit = +limit;
 
     const pagination = getPostgresPaginationObject(
-      pageNumber,
+      page,
       limit,
-      productsResult.length,
+      total,
     );
 
     return { pagination, data: productsResult };
@@ -227,6 +235,7 @@ export class ProductsService {
       // categoryIds,
     };
 
-    return await this.productRepo.searchProductsV2(searchQuery, searchOptions);
+    const { data } = await this.productRepo.searchProductsV2(searchQuery, searchOptions);
+    return data;
   }
 }
