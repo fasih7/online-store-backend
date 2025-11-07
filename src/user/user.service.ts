@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { LoggerService } from '../global/logger';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Like, Repository } from 'typeorm';
 // import { Types } from 'mongoose';
 // import { UserRepo } from './repos/user.mongo.repo';
 // import { MongoUpdateParams } from '../global/types/mongo.types';
@@ -169,16 +169,42 @@ export class UserService {
       sortBy = 'createdAt',
       sortOrder = 'DESC',
       role,
-      status,
+      status: commaSeparedStatus,
+      searchQuery,
     } = query;
 
     // Build where clause
+    const statusIds = commaSeparedStatus?.split(',');
     const where: any = {};
-    if (role) {
-      where.role = role;
+    // if (role) {
+    //   where.role = role;
+    // }
+    if (statusIds?.length && statusIds[0] !== '') {
+      where.status = In(statusIds);
     }
-    if (status) {
-      where.status = status;
+
+    if (searchQuery) {
+      const result = await this.userRepo.searchUsersWithPagination(
+        searchQuery,
+        {
+          pageNumber: page,
+          limit,
+          sortBy,
+          sortOrder: sortOrder as 'ASC' | 'DESC',
+          statusIds,
+        },
+      );
+      return {
+        data: result,
+        pagination: {
+          currentPage: page,
+          itemsPerPage: limit,
+          totalItems: result.length,
+          totalPages: Math.ceil(result.length / limit),
+          hasNextPage: page < Math.ceil(result.length / limit),
+          hasPreviousPage: page > 1,
+        },
+      };
     }
 
     // Get paginated results

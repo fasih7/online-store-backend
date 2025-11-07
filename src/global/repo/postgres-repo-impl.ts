@@ -135,6 +135,8 @@ export class IPostgresRepoBase<T = any> extends PostgresBaseDataAccess<T> {
     return { entity: created, created: true };
   }
 
+  // TODO: try to implement searchV2 function here
+
   /**
    * Update or create a record (upsert)
    */

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Inject,
   Injectable,
@@ -23,6 +24,7 @@ import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { OrderStatus, Order } from './entities/order.entity';
 import { PostgresPaginatedResponse } from 'src/global/types/postgres.types';
 import { getPostgresPaginationObject } from 'src/global/helpers/methods';
+import { ProductsService } from '../products/services/products.service';
 
 @Injectable()
 export class OrdersService {
@@ -31,6 +33,7 @@ export class OrdersService {
     private readonly orderRepo: OrderPostgresRepo,
     private readonly emailService: EmailService,
     private readonly userService: UserService,
+    private readonly productService: ProductsService,
   ) {}
 
   async create(createOrderDto: CreateOrderDto, user: UserFromToken) {
@@ -60,6 +63,9 @@ export class OrdersService {
 
     // Extract items from createOrderDto for PostgreSQL structure
     const { items, ...orderData } = createOrderDto;
+
+    await this.productService.checkProductAvailability(items);
+
     const createdOrder = await this.orderRepo.createOrderWithItems(
       {
         ...orderData,
@@ -89,8 +95,18 @@ export class OrdersService {
     // return SuccessResponse;
   }
 
-  async getAllOrders(query: GetAllOrdersDto): Promise<PostgresPaginatedResponse<Order>> {
-    const { page = 1, limit = 10, variant } = query;
+  async getAllOrders(
+    query: GetAllOrdersDto,
+  ): Promise<PostgresPaginatedResponse<Order>> {
+    const {
+      page = 1,
+      limit = 10,
+      variant,
+      sortBy,
+      sortOrder,
+      status,
+      searchQuery,
+    } = query;
     // Ensure limit doesn't exceed 100
     const safeLimit = Math.min(limit, 100);
     const safePage = Math.max(page, 1);
@@ -99,13 +115,37 @@ export class OrdersService {
       safePage,
       safeLimit,
       variant,
+      sortBy,
+      sortOrder,
+      status,
     );
 
-    const pagination = getPostgresPaginationObject(
-      safePage,
-      safeLimit,
-      total,
-    );
+    const pagination = getPostgresPaginationObject(safePage, safeLimit, total);
+
+    if (searchQuery) {
+      const result = await this.orderRepo.searchOrdersWithPagination(
+        searchQuery,
+        {
+          pageNumber: page,
+          limit,
+          sortBy,
+          sortOrder,
+          status,
+          relations: ['items', 'items.product'],
+        },
+      );
+      return {
+        data: result,
+        pagination: {
+          currentPage: page,
+          itemsPerPage: limit,
+          totalItems: result.length,
+          totalPages: Math.ceil(result.length / limit),
+          hasNextPage: page < Math.ceil(result.length / limit),
+          hasPreviousPage: page > 1,
+        },
+      };
+    }
 
     return {
       data,
@@ -134,11 +174,7 @@ export class OrdersService {
       getOrderItems,
     );
 
-    const pagination = getPostgresPaginationObject(
-      safePage,
-      safeLimit,
-      total,
-    );
+    const pagination = getPostgresPaginationObject(safePage, safeLimit, total);
 
     return {
       data,

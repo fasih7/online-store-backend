@@ -12,7 +12,6 @@ import {
   Query,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard, AdminAuthGuard } from 'src/auth/gaurds/auth.gaurd';
 import { ApiTags } from '@nestjs/swagger';

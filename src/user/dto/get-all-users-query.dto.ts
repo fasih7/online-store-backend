@@ -20,5 +20,13 @@ export class GetAllUsersQueryDto extends BasePaginationQueryDto {
   @IsOptional()
   @IsString()
   status?: string;
-}
 
+  @ApiProperty({
+    description: 'Filter by search query',
+    example: 'John Doe',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  searchQuery?: string;
+}
