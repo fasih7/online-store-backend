@@ -23,6 +23,7 @@ export type FindQueryParamsType = MongoFindParams & {
     sortOrder: string;
     selections?: string | string[];
     new?: boolean;
+    relations?: string[] | GenObject;
   };
 };
 

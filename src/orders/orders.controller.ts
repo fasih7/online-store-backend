@@ -17,8 +17,9 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 import { OptionalJwtAuthGuard } from 'src/auth/gaurds/optional-jwt.gaurd';
 import { VerifyEmailDTO } from './dto/verify-email.dto';
 import { ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/gaurds/auth.gaurd';
-import { GetUserOrdersDto } from './dto/orders.dtos';
+import { AdminAuthGuard, JwtAuthGuard } from '../auth/gaurds/auth.gaurd';
+import { GetUserOrdersDto, GetAllOrdersDto } from './dto/orders.dtos';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
 @ApiTags('Orders')
 @Controller('orders')
@@ -30,11 +31,6 @@ export class OrdersController {
   @Post()
   create(@Body() createOrderDto: CreateOrderDto, @Request() req) {
     return this.ordersService.create(createOrderDto, req.user);
-  }
-
-  @Get()
-  findAll() {
-    return this.ordersService.findAll();
   }
 
   @UseGuards(JwtAuthGuard)
@@ -51,12 +47,35 @@ export class OrdersController {
     return this.ordersService.findOne(id, userId);
   }
 
+  @UseGuards(AdminAuthGuard)
+  @Get('admin/order/:id')
+  findOneAdmin(@Param('id') id: string) {
+    return this.ordersService.findOne(id);
+  }
+
+  @UseGuards(AdminAuthGuard)
+  @Get('')
+  getAllOrders(@Query() query: GetAllOrdersDto) {
+    return this.ordersService.getAllOrders(query);
+  }
+
+  @Patch(':id/status')
+  @UseGuards(AdminAuthGuard)
+  updateOrderStatus(
+    @Param('id') id: string,
+    @Body() updateOrderStatusDto: UpdateOrderStatusDto,
+  ) {
+    return this.ordersService.updateOrderStatus(id, updateOrderStatusDto);
+  }
+
   @Patch(':id')
+  @UseGuards(AdminAuthGuard)
   update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
     return this.ordersService.update(+id, updateOrderDto);
   }
 
   @Delete(':id')
+  @UseGuards(AdminAuthGuard)
   remove(@Param('id') id: string) {
     return this.ordersService.remove(+id);
   }

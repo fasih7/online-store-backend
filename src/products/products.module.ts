@@ -41,5 +41,6 @@ import { UserModule } from '../user/user.module';
     FeaturedProductPostgresRepo,
     FileUploadService,
   ],
+  exports: [ProductPostgresRepo, ProductsService],
 })
 export class ProductsModule {}

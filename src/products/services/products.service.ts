@@ -14,6 +14,7 @@ import { FileUploadService } from './file-upload.service';
 import { Product } from '../entities';
 import { PostgresPaginatedResponse } from '../../global/types/postgres.types';
 import { getPostgresPaginationObject } from '../../global/helpers/methods';
+import { In } from 'typeorm';
 
 @Injectable()
 export class ProductsService {
@@ -71,7 +72,11 @@ export class ProductsService {
     productQuery: GetManyProductsQuery,
     getPagination?: boolean,
   ): Promise<PostgresPaginatedResponse<Product>> {
-    const { category: commaSeparedCategories, ...restQuery } = productQuery;
+    const {
+      category: commaSeparedCategories,
+      relations,
+      ...restQuery
+    } = productQuery as any;
 
     // Logic for category if category is not provided should not pass then
     const categoryIds = commaSeparedCategories?.split(',');
@@ -80,32 +85,56 @@ export class ProductsService {
         categoryIds[0] !== '' && { categoryId: categoryIds }), // PostgreSQL uses IN for array matching
     };
 
-    let { pageNumber = 1, limit = 12, searchQuery } = restQuery;
+    // Parse relations (comma-separated string to array)
+    const parsedRelations: string[] = relations
+      ? relations
+          .split(',')
+          .map((r: string) => r.trim())
+          .filter(Boolean)
+      : [];
+
+    let {
+      page = 1,
+      limit = 12,
+      searchQuery,
+      sortBy,
+      sortOrder,
+    } = restQuery as any;
 
     let productsResult: Product[] = [];
+    let total: number;
 
     if (searchQuery) {
-      productsResult = await this.productRepo.searchProductsV2(searchQuery, {
-        pageNumber,
-        limit,
-        categoryIds,
-        ...restQuery,
-      });
+      const { data, total: searchTotal } =
+        await this.productRepo.searchProductsV2(searchQuery, {
+          pageNumber: page,
+          limit,
+          categoryIds,
+          relations: parsedRelations,
+          sortBy,
+          sortOrder,
+        });
+      productsResult = data;
+      total = searchTotal;
     } else {
       productsResult = await this.productRepo.createQueryAndFindMany({
         query,
-        options: { pagination: { pageNumber, limit }, ...restQuery },
+        options: {
+          pagination: { pageNumber: page, limit },
+          relations: parsedRelations,
+          sortBy,
+          sortOrder,
+        },
       });
+
+      // Get total count
+      total = await this.productRepo.getCount(query);
     }
 
-    pageNumber = +pageNumber;
+    page = +page;
     limit = +limit;
 
-    const pagination = getPostgresPaginationObject(
-      pageNumber,
-      limit,
-      productsResult.length,
-    );
+    const pagination = getPostgresPaginationObject(page, limit, total);
 
     return { pagination, data: productsResult };
   }
@@ -210,6 +239,64 @@ export class ProductsService {
       // categoryIds,
     };
 
-    return await this.productRepo.searchProductsV2(searchQuery, searchOptions);
+    const { data } = await this.productRepo.searchProductsV2(
+      searchQuery,
+      searchOptions,
+    );
+    return data;
+  }
+
+  async checkProductAvailability(
+    items: Array<{
+      productId: string;
+      quantity: number;
+    }>,
+  ) {
+    // Validate product quantities before creating order
+    const productIds = items.map((item) => item.productId);
+    const products = await this.productRepo.findMany({
+      where: { id: In(productIds) },
+    });
+
+    // Check if all products exist
+    if (products.length !== productIds.length) {
+      const foundIds = products.map((p) => p.id);
+      const missingIds = productIds.filter((id) => !foundIds.includes(id));
+      throw new BadRequestException(
+        `Products not found: ${missingIds.join(', ')}`,
+      );
+    }
+
+    // Validate quantities
+    const insufficientStock: Array<{
+      productId: string;
+      title: string;
+      requested: number;
+      available: number;
+    }> = [];
+    for (const item of items) {
+      const product = products.find((p) => p.id === item.productId);
+      if (!product) {
+        throw new BadRequestException(`Product ${item.productId} not found`);
+      }
+      if (product.quantity < item.quantity) {
+        insufficientStock.push({
+          productId: product.id,
+          title: product.title,
+          requested: item.quantity,
+          available: product.quantity,
+        });
+      }
+    }
+
+    if (insufficientStock.length > 0) {
+      const errorMessages = insufficientStock.map(
+        (item) =>
+          `"${item.title}" (ID: ${item.productId}): requested ${item.requested}, available ${item.available}`,
+      );
+      throw new BadRequestException(
+        `Insufficient stock for the following products: ${errorMessages.join('; ')}`,
+      );
+    }
   }
 }

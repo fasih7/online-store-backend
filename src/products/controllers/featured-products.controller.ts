@@ -16,8 +16,8 @@ export class FeaturedProductsController {
   }
 
   @Post()
-  addFeaturedProduct(@Body('product') featuredProduct: any) {
-    return this.featuredProductService.createFeatureProduct(featuredProduct);
+  addFeaturedProduct(@Body('productIds') productIds: string[]) {
+    return this.featuredProductService.createFeatureProduct(productIds);
   }
 
   @Put('/:_id')
