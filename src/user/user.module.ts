@@ -7,9 +7,10 @@ import { Address } from './entities/address.entity';
 import { LoggerModule } from '../global/logger';
 import { UserPostgresRepo } from './repos/user.postgres.repo';
 import { AddressRepo } from './repos/address.repo';
+import { Order } from '../orders/entities';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Address]), LoggerModule],
+  imports: [TypeOrmModule.forFeature([User, Address, Order]), LoggerModule],
   controllers: [UserController],
   providers: [UserService, UserPostgresRepo, AddressRepo],
   exports: [UserService],

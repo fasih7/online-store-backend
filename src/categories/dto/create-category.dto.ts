@@ -13,11 +13,6 @@ export class CreateCategoryDto {
   slug: string;
 
   @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  image: string;
-
-  @ApiProperty()
   @IsMongoId()
   @IsOptional()
   parentCategory?: string;

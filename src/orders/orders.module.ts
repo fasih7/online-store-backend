@@ -11,12 +11,15 @@ import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { OrderPostgresRepo } from './repos/order.postgres.repo';
 import { OrderItemPostgresRepo } from './repos/order-item.postgres.repo';
+import { ProductsModule } from 'src/products/products.module';
+import { Product } from 'src/products/entities/product.entity';
 
 @Module({
   imports: [
     // MongooseModule.forFeature([{ name: MongoOrder.name, schema: OrderSchema }]),
-    TypeOrmModule.forFeature([Order, OrderItem]),
+    TypeOrmModule.forFeature([Order, OrderItem, Product]),
     UserModule,
+    ProductsModule,
   ],
   controllers: [OrdersController],
   providers: [

@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { LoggerService } from '../global/logger';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Like, Repository } from 'typeorm';
 // import { Types } from 'mongoose';
 // import { UserRepo } from './repos/user.mongo.repo';
 // import { MongoUpdateParams } from '../global/types/mongo.types';
@@ -15,6 +15,10 @@ import { User } from './entities/user.entity';
 import { Address } from './entities/address.entity';
 import { AddressRepo } from './repos/address.repo';
 import { SuccessResponse } from '../global/consts';
+import { PostgresPaginatedResponse } from '../global/types/postgres.types';
+import { GetAllUsersQueryDto } from './dto/get-all-users-query.dto';
+import { Status } from './utils/enums';
+import { Order } from '../orders/entities';
 
 @Injectable()
 export class UserService {
@@ -22,6 +26,8 @@ export class UserService {
     private readonly logger: LoggerService,
     private readonly userRepo: UserPostgresRepo,
     private readonly addressRepo: AddressRepo,
+    @InjectRepository(Order)
+    private readonly orderRepository: Repository<Order>,
   ) {}
 
   async create(user: Partial<User>) {
@@ -149,5 +155,112 @@ export class UserService {
 
     // await this.addressRepo.deleteOneById(addressId);
     await this.addressRepo.deleteMany({ user: { id: userId }, id: addressId });
+  }
+
+  // Get all users (for admin)
+  async getAllUsers(
+    query: GetAllUsersQueryDto,
+  ): Promise<PostgresPaginatedResponse<Partial<User>>> {
+    this.logger.silly(UserService.name, this.getAllUsers.name, 'started');
+
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'createdAt',
+      sortOrder = 'DESC',
+      role,
+      status: commaSeparedStatus,
+      searchQuery,
+    } = query;
+
+    // Build where clause
+    const statusIds = commaSeparedStatus?.split(',');
+    const where: any = {};
+    // if (role) {
+    //   where.role = role;
+    // }
+    if (statusIds?.length && statusIds[0] !== '') {
+      where.status = In(statusIds);
+    }
+
+    if (searchQuery) {
+      const result = await this.userRepo.searchUsersWithPagination(
+        searchQuery,
+        {
+          pageNumber: page,
+          limit,
+          sortBy,
+          sortOrder: sortOrder as 'ASC' | 'DESC',
+          statusIds,
+        },
+      );
+      return {
+        data: result,
+        pagination: {
+          currentPage: page,
+          itemsPerPage: limit,
+          totalItems: result.length,
+          totalPages: Math.ceil(result.length / limit),
+          hasNextPage: page < Math.ceil(result.length / limit),
+          hasPreviousPage: page > 1,
+        },
+      };
+    }
+
+    // Get paginated results
+    const result = await this.userRepo.findWithPagination(
+      Object.keys(where).length > 0 ? where : undefined,
+      {
+        page,
+        limit,
+        sortBy,
+        sortOrder: sortOrder as 'ASC' | 'DESC',
+      },
+    );
+
+    // Get user IDs from the paginated results
+    const userIds = result.data.map((user) => user.id);
+
+    // Get order counts for all users in a single query
+    const orderCountsMap = new Map<string, number>();
+    if (userIds.length > 0) {
+      const orderCounts = await this.orderRepository
+        .createQueryBuilder('order')
+        .select('order.userId', 'userId')
+        .addSelect('COUNT(*)', 'count')
+        .where('order.userId IN (:...userIds)', { userIds })
+        .groupBy('order.userId')
+        .getRawMany();
+
+      // Convert to Map for easy lookup
+      orderCounts.forEach((item) => {
+        orderCountsMap.set(item.userId, parseInt(item.count, 10));
+      });
+    }
+
+    // Exclude sensitive fields from each user and add order count
+    const sanitizedData = result.data.map((user) => {
+      const { password, token, hashedRt, ...sanitizedUser } = user;
+      return {
+        ...sanitizedUser,
+        totalOrders: orderCountsMap.get(user.id) || 0,
+      };
+    });
+
+    return {
+      data: sanitizedData,
+      pagination: result.pagination,
+    };
+  }
+
+  // Update user status (for admin)
+  async updateUserStatus(
+    userId: string,
+    status: Status,
+  ): Promise<{ success: boolean }> {
+    this.logger.silly(UserService.name, this.updateUserStatus.name, 'started');
+
+    await this.userRepo.updateOneById(userId, { status });
+    return SuccessResponse;
   }
 }

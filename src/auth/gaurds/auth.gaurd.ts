@@ -40,8 +40,10 @@ export class AdminAuthGuard extends JwtAuthGuard {
     }
 
     try {
+      console.log({ userId: user.id });
       // Fetch user from database to get current role
       const dbUser = await this.userService.findOneByIdWithRole(user.id);
+      console.log({ dbUser });
 
       if (!dbUser) {
         throw new ForbiddenException('User not found');
@@ -54,6 +56,7 @@ export class AdminAuthGuard extends JwtAuthGuard {
 
       return true;
     } catch (error) {
+      console.log({ error });
       if (error instanceof ForbiddenException) {
         throw error;
       }

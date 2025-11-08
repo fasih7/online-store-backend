@@ -7,14 +7,14 @@ import {
   Param,
   Delete,
   UseGuards,
+  UseInterceptors,
+  UploadedFiles,
 } from '@nestjs/common';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-import { JwtAuthGuard } from 'src/auth/gaurds/auth.gaurd';
-import { RolesGuard } from 'src/auth/role/role.guard';
-import { Roles } from 'src/auth/roles/roles.decorator';
-import { Role } from 'src/global/enums';
+import { AdminAuthGuard } from 'src/auth/gaurds/auth.gaurd';
 import { ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Categories')
@@ -22,11 +22,17 @@ import { ApiTags } from '@nestjs/swagger';
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles(Role.admin)
+  @UseGuards(AdminAuthGuard)
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'image', maxCount: 1 }]))
   @Post()
-  create(@Body() createCategoryDto: CreateCategoryDto) {
-    return this.categoriesService.create(createCategoryDto);
+  create(
+    @Body() createCategoryDto: CreateCategoryDto,
+    @UploadedFiles()
+    files: {
+      image?: Express.Multer.File[];
+    },
+  ) {
+    return this.categoriesService.create(createCategoryDto, files);
   }
 
   @Get()
@@ -45,15 +51,22 @@ export class CategoriesController {
   }
 
   @Patch(':id')
+  @UseGuards(AdminAuthGuard)
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'image', maxCount: 1 }]))
   update(
     @Param('id') id: string,
     @Body() updateCategoryDto: UpdateCategoryDto,
+    @UploadedFiles()
+    files: {
+      image?: Express.Multer.File[];
+    },
   ) {
-    return this.categoriesService.update(+id, updateCategoryDto);
+    return this.categoriesService.update(id, updateCategoryDto, files);
   }
 
   @Delete(':id')
+  @UseGuards(AdminAuthGuard)
   remove(@Param('id') id: string) {
-    return this.categoriesService.remove(+id);
+    return this.categoriesService.remove(id);
   }
 }

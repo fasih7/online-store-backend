@@ -50,10 +50,15 @@ export class IPostgresRepoBase<T = any> extends PostgresBaseDataAccess<T> {
     }
 
     // Build PostgreSQL find params
-    const postgresParams = {
+    const postgresParams: any = {
       where: findQueryParams?.query,
       options: queryOptions,
     };
+
+    // Handle relations if provided in options
+    if (findQueryParams?.options?.relations) {
+      postgresParams.relations = findQueryParams.options.relations;
+    }
 
     return await this.findMany(postgresParams);
   }
@@ -129,6 +134,8 @@ export class IPostgresRepoBase<T = any> extends PostgresBaseDataAccess<T> {
     const created = await this.create({ ...createData, ...where });
     return { entity: created, created: true };
   }
+
+  // TODO: try to implement searchV2 function here
 
   /**
    * Update or create a record (upsert)
